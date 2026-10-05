@@ -10,6 +10,11 @@ de Drive a través de Apps Script (`apps-script/Code.gs`).
 - **Quién lo creó**: todo lleva la marca de quién lo creó y de quién lo cambió por última vez (A = Andrea, J = Jon).
 - **Para quién**: Jon, Andrea o ambos.
 - **Urgencia**: Urgente, Media o Baja.
+- **Estado con dos checks**: *Ejecución* (completada) y *Validación* (finalizada). Según los checks, cada tarea
+  y cada proyecto está en **Pendiente de ejecución**, **Pendiente de validación** o **Terminados** (con los dos).
+  Validar marca también la ejecución; quitar la ejecución quita la validación. Se guarda quién marcó cada check y cuándo.
+  En *Tareas* las tres fases son columnas y se puede arrastrar una tarea de una a otra.
+  El cumplimiento de plazo se mide con la fecha de ejecución frente a la de entrega.
 - **Fechas**: cuándo empezar (con hora y tiempo previsto), fecha de entrega (con hora opcional) y fecha de revisión.
   Cada fecha tiene botones **Hoy** y **Mañana** para no tener que abrir el calendario.
 - **Hoy**: la agenda del día por franjas horarias, lo vencido, lo que hay que entregar hoy, lo que toca empezar y lo de los próximos 7 días.

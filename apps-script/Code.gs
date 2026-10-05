@@ -1,4 +1,6 @@
-/*** AGENDA COMPARTIDA ANDREA · JON — conector con Google Sheets (v1) ***/
+/*** AGENDA COMPARTIDA ANDREA · JON — conector con Google Sheets (v2) ***/
+/*** v2: checks de ejecución y validación. Además, cualquier campo nuevo que mande
+    la agenda crea su columna automáticamente (no hará falta volver a tocar esto). ***/
 /*** Pega este código COMPLETO en Extensiones > Apps Script de tu Google Sheet
      (sustituye lo que haya) y cambia la clave de abajo. ***/
 
@@ -10,6 +12,7 @@ var COLS = [
   'id', 'proyecto_id', 'titulo', 'descripcion', 'urgencia', 'estado', 'responsable',
   'fecha_inicio', 'hora_inicio', 'duracion', 'fecha_revision', 'fecha_entrega', 'hora_entrega',
   'entrega_original', 'completada_en',
+  'ejecutada', 'ejecutada_por', 'ejecutada_en', 'validada', 'validada_por', 'validada_en',
   'creado_por', 'creado_en', 'actualizado_por', 'actualizado_en', 'borrado',
   'comentarios', 'historial'
 ];
@@ -108,6 +111,18 @@ function leer_(k){
 function guardar_(k, lista){
   var s = hoja_(k), hdr = cabecera_(s), lr = s.getLastRow();
   var vals = lr > 1 ? s.getRange(2, 1, lr - 1, hdr.length).getValues() : [];
+  // Campos que aún no tienen columna: se añaden al final
+  var nuevas = [];
+  lista.forEach(function(rec){
+    for(var key in rec){
+      if(/^[a-z0-9_]+$/.test(key) && hdr.indexOf(key) < 0 && nuevas.indexOf(key) < 0) nuevas.push(key);
+    }
+  });
+  if(nuevas.length){
+    s.getRange(1, hdr.length + 1, 1, nuevas.length).setValues([nuevas]);
+    hdr = hdr.concat(nuevas);
+    vals = vals.map(function(r){ while(r.length < hdr.length) r.push(''); return r; });
+  }
   var iId = hdr.indexOf('id'), pos = {};
   for(var i = 0; i < vals.length; i++){ if(vals[i][iId]) pos[String(vals[i][iId])] = i; }
   var n = 0;

@@ -43,6 +43,7 @@ svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .ibtn{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:#fff}
 .ibtn:hover{background:rgba(255,255,255,.13)}
 .ibtn .badge{position:absolute;top:2px;right:1px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#F59E0B;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.ibtn .badge[hidden]{display:none}
 .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--az1);background:rgba(255,255,255,.1);border:0;border-radius:20px;padding:4px 10px;white-space:nowrap}
 .sync i{width:8px;height:8px;border-radius:50%;background:#94A3B8;display:block}
 .sync.ok i{background:#4ADE80}.sync.sync i{background:#FBBF24}.sync.error i{background:#F87171}
@@ -110,10 +111,41 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .tr-tit{font-weight:600;color:var(--tx);overflow-wrap:anywhere}
 .tr.done .tr-tit{text-decoration:line-through;color:var(--mu)}
 .tr-sub{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;margin-top:4px;font-size:12.5px;color:var(--mu)}
-.chk{flex:none;width:20px;height:20px;margin-top:1px;border-radius:6px;border:2px solid var(--bd2);background:#fff;display:grid;place-items:center;padding:0}
-.chk:hover{border-color:var(--az6)}
-.chk.on{background:var(--az6);border-color:var(--az6)}
-.chk.on::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+
+/* checks de ejecución y validación */
+.cks{display:flex;gap:5px;flex:none;align-items:flex-start}
+.ck{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd2);background:#fff;border-radius:7px;padding:3px 8px 3px 5px;font-size:12px;font-weight:600;color:var(--mu);white-space:nowrap}
+.ck i{width:14px;height:14px;border-radius:4px;border:2px solid var(--bd2);display:grid;place-items:center;flex:none}
+.ck:hover{border-color:var(--az5);color:var(--az7)}
+.ck.on i::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.ck-ejecutada.on{background:var(--az0);border-color:var(--az6);color:var(--az7)}
+.ck-ejecutada.on i{background:var(--az6);border-color:var(--az6)}
+.ck-validada.on{background:var(--verde1);border-color:#4ADE80;color:var(--verde)}
+.ck-validada.on i{background:var(--verde);border-color:var(--verde)}
+.fase{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.f-ejecucion{background:#F1F5F9;color:var(--tx2)}
+.f-validacion{background:#E0E7FF;color:#3730A3}
+.f-terminada{background:var(--verde1);color:var(--verde)}
+.ckl{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer}
+.ckl input{width:18px;height:18px;accent-color:var(--az6)}
+.ckl small{color:var(--mu);font-weight:400;font-size:12px}
+.estado-ck{display:flex;gap:10px 22px;flex-wrap:wrap;align-items:center;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+
+/* tablero por fases */
+.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.kb-col{border:1px solid var(--bd);border-radius:12px;background:var(--sf);padding:10px;min-height:160px}
+.kb-col>h3{font-size:14px;display:flex;align-items:center;gap:8px;margin:2px 4px 10px;color:var(--tx2)}
+.kb-col>h3 .n{border-radius:10px;padding:0 8px;font-size:12px;background:#fff;border:1px solid var(--bd)}
+.kb-col.k-ejecucion{border-top:4px solid #94A3B8}
+.kb-col.k-validacion{border-top:4px solid #6366F1}
+.kb-col.k-terminada{border-top:4px solid var(--verde)}
+.kb-col .tr{background:#fff;border:1px solid var(--bd);margin-top:6px;flex-wrap:wrap}
+.kb-col .tr:hover{border-color:var(--az3)}
+.kb-col .hint{margin:-4px 4px 6px;font-size:12px}
+.secc{margin-bottom:22px}
+.secc>h2{font-size:15px;color:var(--tx2);display:flex;align-items:center;gap:8px;margin:0 0 10px 2px}
+.secc>h2 .n{background:var(--az1);color:var(--az8);border-radius:10px;padding:0 8px;font-size:12px}
+.secc>details>summary{cursor:pointer;font-size:15px;font-weight:600;color:var(--tx2);margin:0 0 10px 2px}
 
 /* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
@@ -233,7 +265,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .rv-pf{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--tx2)}
 .rv-pf .lab{display:flex;align-items:center;gap:6px}
 .rv-tw{overflow-x:auto}
-.rv-t{width:100%;border-collapse:collapse;min-width:980px}
+.rv-t{width:100%;border-collapse:collapse;min-width:1240px}
 .rv-t th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mu);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--bd);background:#fff}
 .rv-t td{padding:7px 8px;border-bottom:1px solid #F1F5F9;vertical-align:top}
 .rv-t tr:last-child td{border-bottom:0}
@@ -321,7 +353,8 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);opacity:0;transition:.25s;background:var(--az8);color:#fff;padding:9px 16px;border-radius:10px;font-weight:600;z-index:60;pointer-events:none;box-shadow:var(--sh)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-@media (max-width:1100px){.hoy-g{grid-template-columns:1fr}}
+@media (max-width:1100px){.hoy-g{grid-template-columns:1fr}.kb{grid-template-columns:minmax(0,1fr)}}
+.pc .tr{flex-wrap:wrap}
 @media (max-width:900px){
   .cal-wrap{grid-template-columns:minmax(0,1fr)}
   .us{position:static;max-height:none;order:2}
@@ -334,6 +367,7 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
   main{padding:14px 12px 50px}
   .row2{grid-template-columns:1fr}
   .pgrid{grid-template-columns:1fr}
+  .tr{flex-wrap:wrap}
   .cal-nav h2{min-width:0;font-size:16px}
   .mc{min-height:80px}
   #nov{top:110px}
@@ -376,8 +410,8 @@ const USERS = {andrea:{n:'Andrea', i:'A'}, jon:{n:'Jon', i:'J'}};
 const RESP = {jon:'Jon', andrea:'Andrea', ambos:'Ambos'};
 const URG = {alta:'Urgente', media:'Media', baja:'Baja'};
 const URG_ORD = {alta:0, media:1, baja:2};
-const EST_T = {pendiente:'Pendiente', en_curso:'En curso', revision:'En revisión', hecha:'Hecha'};
-const EST_P = {pendiente:'Pendiente', en_curso:'En marcha', pausa:'En pausa', terminado:'Terminado'};
+const FASES = {ejecucion:'Pendiente de ejecución', validacion:'Pendiente de validación', terminada:'Terminados'};
+const FASE_C = {ejecucion:'Por ejecutar', validacion:'Por validar', terminada:'Terminada'};
 const DURS = {15:'15 min', 30:'30 min', 45:'45 min', 60:'1 h', 90:'1 h 30', 120:'2 h', 180:'3 h', 240:'4 h', 480:'Todo el día (8 h)'};
 const H_INI = 7, H_FIN = 21, SLOT = 30, SLOT_PX = 22;
 const DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -397,10 +431,11 @@ let CFG = lsGet('cfg', {url:'', clave:''});
 let DB = lsGet('db', {proyectos:{}, tareas:{}});
 let DIRTY = lsGet('dirty', {proyectos:{}, tareas:{}});
 let UI = Object.assign({vista:'hoy', resp:'todos', cal:'semana', calFecha:'', finde:false, q:'',
-  pest:'abiertos', test:'pend', turg:'todas', tproj:'', rvAtencion:false}, lsGet('ui', {}));
+  turg:'todas', tproj:'', rvAtencion:false, verTerm:false}, lsGet('ui', {}));
 UI.q = '';
 function persist(){ lsSet('db', DB); lsSet('dirty', DIRTY); }
 function guardarUI(){ lsSet('ui', UI); }
+Object.values(DB.proyectos).concat(Object.values(DB.tareas)).forEach(normRec);
 
 /* =========================================================
    UTILIDADES
@@ -431,7 +466,10 @@ function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add(
 const proyectos = () => Object.values(DB.proyectos).filter(p => !p.borrado);
 const tareas = () => Object.values(DB.tareas).filter(t => !t.borrado);
 const tareasDe = pid => tareas().filter(t => t.proyecto_id === pid);
-const hecha = r => r.estado === 'hecha' || r.estado === 'terminado';
+// Dos checks: ejecución completada y validación finalizada. Con los dos, está terminada.
+const ejec = r => !!r.ejecutada;
+const hecha = r => !!(r.ejecutada && r.validada);
+const fase = r => hecha(r) ? 'terminada' : r.ejecutada ? 'validacion' : 'ejecucion';
 const proyVivo = id => id && DB.proyectos[id] && !DB.proyectos[id].borrado;
 const coincideResp = r => UI.resp === 'todos' || !r.responsable || r.responsable === UI.resp || r.responsable === 'ambos';
 const filtrarResp = l => l.filter(coincideResp);
@@ -446,6 +484,12 @@ const sortP = (a, b) => URG_ORD[a.urgencia || 'media'] - URG_ORD[b.urgencia || '
 function normRec(r){
   r.borrado = r.borrado === true || r.borrado === 'true';
   r.duracion = Number(r.duracion) || '';
+  // Registros anteriores a los checks: se deducen del estado antiguo
+  const viejoHecho = r.estado === 'hecha' || r.estado === 'terminado';
+  if(r.ejecutada === '' || r.ejecutada == null) r.ejecutada = viejoHecho || r.estado === 'revision';
+  else r.ejecutada = r.ejecutada === true || r.ejecutada === 'true';
+  if(r.validada === '' || r.validada == null) r.validada = viejoHecho;
+  else r.validada = r.validada === true || r.validada === 'true';
   if(!Array.isArray(r.comentarios)) r.comentarios = [];
   if(!Array.isArray(r.historial)) r.historial = [];
   return r;
@@ -458,6 +502,7 @@ function unir(a, b){
 
 function crear(k, o){
   const base = {id:uid(k === 'tareas' ? 't' : 'p'), proyecto_id:'', titulo:'', descripcion:'', urgencia:'media', estado:'pendiente',
+    ejecutada:false, ejecutada_por:'', ejecutada_en:'', validada:false, validada_por:'', validada_en:'',
     responsable:'jon', fecha_inicio:'', hora_inicio:'', duracion:k === 'tareas' ? 60 : '', fecha_revision:'', fecha_entrega:'',
     hora_entrega:'', entrega_original:'', completada_en:'', creado_por:ME, creado_en:nowISO(), comentarios:[], historial:[], borrado:false};
   return guardarRec(k, Object.assign(base, o), null);
@@ -476,8 +521,15 @@ function guardarRec(k, r, prev){
     });
   }
   if(!r.entrega_original && r.fecha_entrega) r.entrega_original = r.fecha_entrega;
-  if(hecha(r) && !r.completada_en) r.completada_en = hoy();
-  if(!hecha(r)) r.completada_en = '';
+  // Validar implica ejecutar; quitar la ejecución quita la validación
+  if(prev && prev.ejecutada && !r.ejecutada) r.validada = false;
+  if(r.validada) r.ejecutada = true;
+  ['ejecutada', 'validada'].forEach(f => {
+    if(r[f] && !(prev && prev[f])){ r[f + '_en'] = r[f + '_en'] && !prev ? r[f + '_en'] : hoy(); r[f + '_por'] = r[f + '_por'] && !prev ? r[f + '_por'] : ME; }
+    if(!r[f]){ r[f + '_en'] = ''; r[f + '_por'] = ''; }
+  });
+  r.estado = hecha(r) ? 'hecha' : r.ejecutada ? 'revision' : 'pendiente';
+  r.completada_en = hecha(r) ? r.validada_en : '';
   r.actualizado_en = nowISO();
   r.actualizado_por = ME;
   DB[k][r.id] = r;
@@ -598,12 +650,13 @@ const chipUrg = u => `<span class="urg urg-${u || 'media'}">${URG[u || 'media']}
 const chipResp = r => r ? `<span class="resp">Para ${RESP[r] || r}</span>` : '';
 function plazo(r){
   const h = hoy();
-  if(hecha(r)){
-    if(r.fecha_entrega && r.completada_en){
-      const d = diffDays(r.completada_en, r.fecha_entrega);
+  // El cumplimiento se mide con la fecha de ejecución frente a la de entrega
+  if(ejec(r)){
+    if(r.fecha_entrega && r.ejecutada_en){
+      const d = diffDays(r.ejecutada_en, r.fecha_entrega);
       return d <= 0 ? {c:'ok', t:'✓ A tiempo'} : {c:'tarde', t:`✓ ${d} d tarde`};
     }
-    return {c:'ok', t:'✓ Hecha'};
+    return {c:'ok', t:'✓ Ejecutada'};
   }
   if(!r.fecha_entrega) return {c:'nada', t:'Sin fecha'};
   const d = diffDays(r.fecha_entrega, h);
@@ -624,17 +677,27 @@ function fechasTxt(r){
 function filaTarea(t, o = {}){
   const p = !o.sinProyecto && proyVivo(t.proyecto_id) ? DB.proyectos[t.proyecto_id] : null;
   const nc = (t.comentarios || []).length;
-  return `<div class="tr ${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}" data-act="edit-t" data-id="${t.id}">
-    <button class="chk ${hecha(t) ? 'on' : ''}" data-act="toggle-t" data-id="${t.id}" title="${hecha(t) ? 'Marcar como pendiente' : 'Marcar como hecha'}"></button>
+  return `<div class="tr ${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}" data-act="edit-t" data-id="${t.id}" ${o.drag ? `draggable="true" data-drag="${t.id}"` : ''}>
     <div class="tr-main">
       <div class="tr-tit">${esc(t.titulo)}</div>
       <div class="tr-sub">${p ? `<span class="ptag">${esc(p.titulo)}</span>` : ''}${chipUrg(t.urgencia)}${chipPlazo(t)}${chipResp(t.responsable)}
         ${t.fecha_inicio ? `<span>Empieza ${fCorta(t.fecha_inicio)}${t.hora_inicio ? ' ' + t.hora_inicio : ''}</span>` : ''}
         ${t.fecha_entrega ? `<span>Entrega ${fCorta(t.fecha_entrega)}${t.hora_entrega ? ' ' + t.hora_entrega : ''}</span>` : ''}
+        ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}
         ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${avCreador(t)}</div>
     </div>
+    ${checks('tareas', t)}
   </div>`;
 }
+function infoCheck(r, f){
+  return r[f] ? `${f === 'ejecutada' ? 'Ejecutada' : 'Validada'} por ${nombre(r[f + '_por'])} el ${fCorta(r[f + '_en'])}` : '';
+}
+function checks(k, r){
+  const b = (f, txt) => `<button class="ck ck-${f} ${r[f] ? 'on' : ''}" data-act="chk" data-k="${k}" data-id="${r.id}" data-f="${f}"
+    title="${r[f] ? esc(infoCheck(r, f)) + ' · clic para desmarcar' : (f === 'ejecutada' ? 'Marcar ejecución completada' : 'Marcar validación finalizada')}"><i></i>${txt}</button>`;
+  return `<div class="cks">${b('ejecutada', 'Ejecución')}${b('validada', 'Validación')}</div>`;
+}
+const chipFase = r => `<span class="fase f-${fase(r)}">${FASE_C[fase(r)]}</span>`;
 const segUI = (key, opts, val) => `<div class="segf">${Object.entries(opts).map(([k, l]) =>
   `<button class="${val === k ? 'on' : ''}" data-act="ui" data-k="${key}" data-v="${k}">${l}</button>`).join('')}</div>`;
 const filtroResp = () => segUI('resp', {todos:'Todo', jon:'Jon', andrea:'Andrea'}, UI.resp);
@@ -646,55 +709,63 @@ const vacio = t => `<div class="empty sm">${t}</div>`;
    ========================================================= */
 function vHoy(){
   const h = hoy(), en7 = addDays(h, 7), hace7 = addDays(h, -7);
-  const todas = filtrarResp(tareas()), ts = todas.filter(t => !hecha(t));
+  const todas = filtrarResp(tareas()), ts = todas.filter(t => !ejec(t));
   const venc = ts.filter(t => t.fecha_entrega && t.fecha_entrega < h).sort(sortT);
   const paraHoy = ts.filter(t => t.fecha_entrega === h).sort(sortT);
-  const empezar = ts.filter(t => t.fecha_inicio && t.fecha_inicio <= h && t.estado === 'pendiente' && !(t.fecha_entrega && t.fecha_entrega <= h)).sort(sortT);
+  const empezar = ts.filter(t => t.fecha_inicio && t.fecha_inicio <= h && !(t.fecha_entrega && t.fecha_entrega <= h)).sort(sortT);
   const prox = ts.filter(t => t.fecha_entrega > h && t.fecha_entrega <= en7).sort(sortT);
-  const hechas7 = todas.filter(t => hecha(t) && t.completada_en >= hace7);
+  const porValidar = todas.filter(t => fase(t) === 'validacion').sort(sortRev);
+  const term7 = todas.filter(t => hecha(t) && t.completada_en >= hace7);
   const lista = (titulo, l, cls = '', vacioTxt = 'Nada por aquí.') => `<section class="card ${cls}"><h2>${titulo} <span class="n">${l.length}</span></h2>${l.map(t => filaTarea(t)).join('') || vacio(vacioTxt)}</section>`;
   return `<div class="vh"><div><h1>Hola${ME ? ', ' + nombre(ME) : ''}</h1><p>${fLarga(h)} de ${parseISO(h).getFullYear()}</p></div><div class="bar" style="margin:0">${filtroResp()}</div></div>
-  <div class="kpis">${kpi(paraHoy.length, 'Para entregar hoy')}${kpi(venc.length, 'Vencidas', venc.length ? 'k-rojo' : '')}${kpi(prox.length, 'Entregas próximos 7 días')}${kpi(hechas7.length, 'Hechas últimos 7 días', 'k-verde')}${kpi(novedades().length, 'Novedades')}</div>
+  <div class="kpis">${kpi(paraHoy.length, 'Para entregar hoy')}${kpi(venc.length, 'Vencidas', venc.length ? 'k-rojo' : '')}${kpi(prox.length, 'Entregas próximos 7 días')}${kpi(porValidar.length, 'Pendientes de validación')}${kpi(term7.length, 'Terminadas últimos 7 días', 'k-verde')}${kpi(novedades().length, 'Novedades')}</div>
   <div class="hoy-g">
     <section class="card"><h2>Agenda de hoy</h2>${timeGrid([h], true)}</section>
     <div class="col">
       ${venc.length ? lista('Vencidas', venc, 'c-venc') : ''}
       ${lista('Para entregar hoy', paraHoy, '', 'Nada que entregar hoy.')}
       ${lista('Toca empezar', empezar, '', 'Nada pendiente de arrancar.')}
+      ${lista('Pendientes de validación', porValidar, '', 'Nada esperando validación.')}
       ${lista('Próximos 7 días', prox, '', 'Sin entregas esta semana.')}
     </div>
   </div>`;
 }
+// Orden para lo pendiente de validar: fecha de revisión, luego entrega
+const sortRev = (a, b) => (a.fecha_revision || '9999').localeCompare(b.fecha_revision || '9999') || sortT(a, b);
+const sortTerm = (a, b) => (b.completada_en || '').localeCompare(a.completada_en || '') || (b.actualizado_en || '').localeCompare(a.actualizado_en || '');
 
 /* =========================================================
    VISTA: PROYECTOS
    ========================================================= */
 function vProyectos(){
-  const q = (UI.q || '').toLowerCase().trim(), est = UI.pest;
-  let ps = proyectos().filter(p => est === 'todos' || (est === 'abiertos' ? !hecha(p) : hecha(p)));
-  ps = ps.filter(p => coincideResp(p) || tareasDe(p.id).some(coincideResp));
+  const q = (UI.q || '').toLowerCase().trim();
+  let ps = proyectos().filter(p => coincideResp(p) || tareasDe(p.id).some(coincideResp));
   if(q) ps = ps.filter(p => (p.titulo || '').toLowerCase().includes(q) || tareasDe(p.id).some(t => (t.titulo || '').toLowerCase().includes(q)));
   ps.sort(sortP);
-  let sueltas = filtrarResp(tareas()).filter(t => !proyVivo(t.proyecto_id));
+  let sueltas = filtrarResp(tareas()).filter(t => !proyVivo(t.proyecto_id) && !hecha(t));
   if(q) sueltas = sueltas.filter(t => (t.titulo || '').toLowerCase().includes(q));
-  if(est === 'abiertos') sueltas = sueltas.filter(t => !hecha(t));
-  return `<div class="vh"><div><h1>Proyectos</h1><p>${proyectos().filter(p => !hecha(p)).length} abiertos</p></div><button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
-  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">
-    ${segUI('pest', {abiertos:'Abiertos', terminados:'Terminados', todos:'Todos'}, UI.pest)}${filtroResp()}</div>
-  ${ps.length || sueltas.length ? `<div class="pgrid">${ps.map(pcard).join('')}${sueltas.length ? pcardSueltas(sueltas) : ''}</div>`
+  const de = f => ps.filter(p => fase(p) === f);
+  const term = de('terminada').sort(sortTerm);
+  const seccion = (f, l, extra = '') => `<section class="secc"><h2>${FASES[f]} <span class="n">${l.length}</span></h2>
+    ${l.length || extra ? `<div class="pgrid">${l.map(pcard).join('')}${extra}</div>` : vacio(f === 'validacion' ? 'Ningún proyecto esperando validación.' : 'Ningún proyecto aquí.')}</section>`;
+  return `<div class="vh"><div><h1>Proyectos</h1><p>${proyectos().filter(p => !hecha(p)).length} abiertos · marca <b>Ejecución</b> y <b>Validación</b> para moverlos de sección</p></div><button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
+  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">${filtroResp()}</div>
+  ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas) : '') + seccion('validacion', de('validacion'))
+      + `<section class="secc"><details ${q ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? `<div class="pgrid">${term.map(pcard).join('')}</div>` : vacio('Todavía no hay proyectos terminados.')}</details></section>`
     : `<div class="empty">No hay proyectos todavía. Crea el primero con <b>+ Nuevo proyecto</b>.</div>`}`;
 }
 function pcard(p){
   const todas = tareasDe(p.id), ts = filtrarResp(todas);
-  const pend = ts.filter(t => !hecha(t)).sort(sortT), hechas = ts.filter(hecha);
+  const pend = ts.filter(t => !hecha(t)).sort((a, b) => fase(a).localeCompare(fase(b)) || sortT(a, b)), hechas = ts.filter(hecha);
   const nh = todas.filter(hecha).length, pct = todas.length ? Math.round(nh / todas.length * 100) : 0;
   return `<article class="pc u-${p.urgencia || 'media'} ${hecha(p) ? 'done' : ''} ${esNovedad(p) ? 'nuevo' : ''}">
     <div class="pc-h"><h3><a data-act="edit-p" data-id="${p.id}">${esc(p.titulo)}</a></h3>${avCreador(p, 'o')}</div>
-    <div class="chips">${chipUrg(p.urgencia)}<span class="est">${EST_P[p.estado] || p.estado}</span>${chipResp(p.responsable)}${chipPlazo(p)}</div>
+    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p.responsable)}${chipPlazo(p)}</div>
     <div class="pc-f">${fechasTxt(p)}</div>
-    <div class="prog"><i style="width:${pct}%"></i></div><div class="prog-t">${nh} de ${todas.length} tareas hechas</div>
+    <div style="margin-bottom:8px">${checks('proyectos', p)}</div>
+    <div class="prog"><i style="width:${pct}%"></i></div><div class="prog-t">${nh} de ${todas.length} tareas terminadas${todas.length && nh === todas.length && !hecha(p) ? ' · <b>todas terminadas: ¿cerrar el proyecto?</b>' : ''}</div>
     <div class="pc-l">${pend.map(t => filaTarea(t, {sinProyecto:1})).join('') || vacio('Sin tareas pendientes.')}</div>
-    ${hechas.length ? `<details class="pc-d"><summary>${hechas.length} hecha${hechas.length > 1 ? 's' : ''}</summary><div class="pc-l">${hechas.map(t => filaTarea(t, {sinProyecto:1})).join('')}</div></details>` : ''}
+    ${hechas.length ? `<details class="pc-d"><summary>${hechas.length} terminada${hechas.length > 1 ? 's' : ''}</summary><div class="pc-l">${hechas.map(t => filaTarea(t, {sinProyecto:1})).join('')}</div></details>` : ''}
     <input class="quick-add" data-proj="${p.id}" placeholder="+ Añadir tarea y pulsar Intro">
   </article>`;
 }
@@ -709,36 +780,27 @@ function pcardSueltas(ts){
    VISTA: TAREAS
    ========================================================= */
 function vTareas(){
-  const h = hoy(), en7 = addDays(h, 7), q = (UI.q || '').toLowerCase().trim();
+  const q = (UI.q || '').toLowerCase().trim();
   let ts = filtrarResp(tareas());
-  if(UI.test === 'pend') ts = ts.filter(t => !hecha(t));
-  if(UI.test === 'hechas') ts = ts.filter(hecha);
   if(UI.turg !== 'todas') ts = ts.filter(t => (t.urgencia || 'media') === UI.turg);
   if(UI.tproj === '_') ts = ts.filter(t => !proyVivo(t.proyecto_id));
   else if(UI.tproj) ts = ts.filter(t => t.proyecto_id === UI.tproj);
   if(q) ts = ts.filter(t => (t.titulo || '').toLowerCase().includes(q) || (t.descripcion || '').toLowerCase().includes(q));
   const projOpts = proyectos().sort((a, b) => (a.titulo || '').localeCompare(b.titulo || ''))
     .map(p => `<option value="${p.id}" ${UI.tproj === p.id ? 'selected' : ''}>${esc(p.titulo)}</option>`).join('');
-  let cuerpo;
-  if(!ts.length) cuerpo = `<div class="empty">No hay tareas con estos filtros.</div>`;
-  else if(UI.test === 'hechas'){
-    ts.sort((a, b) => (b.completada_en || '').localeCompare(a.completada_en || ''));
-    cuerpo = `<div class="lista">${ts.map(t => filaTarea(t)).join('')}</div>`;
-  } else {
-    ts.sort(sortT);
-    const grupos = [
-      ['Vencidas', 'g-venc', t => !hecha(t) && t.fecha_entrega && t.fecha_entrega < h],
-      ['Para hoy', 'g-hoy', t => !hecha(t) && t.fecha_entrega === h],
-      ['Próximos 7 días', '', t => !hecha(t) && t.fecha_entrega > h && t.fecha_entrega <= en7],
-      ['Más adelante', '', t => !hecha(t) && t.fecha_entrega > en7],
-      ['Sin fecha de entrega', '', t => !hecha(t) && !t.fecha_entrega],
-      ['Hechas', '', hecha]
-    ];
-    cuerpo = grupos.map(([tit, cls, f]) => { const l = ts.filter(f); return l.length ? `<div class="grp ${cls}"><h3>${tit} <span class="urg urg-baja">${l.length}</span></h3><div class="lista">${l.map(t => filaTarea(t)).join('')}</div></div>` : ''; }).join('');
-  }
-  return `<div class="vh"><div><h1>Tareas</h1><p>${tareas().filter(t => !hecha(t)).length} pendientes en total</p></div><button class="btn pri" data-act="new-t">+ Nueva tarea</button></div>
+  const LIM = 25;
+  const col = f => {
+    let l = ts.filter(t => fase(t) === f).sort(f === 'terminada' ? sortTerm : f === 'validacion' ? sortRev : sortT);
+    const total = l.length, cortar = f === 'terminada' && !UI.verTerm && total > LIM;
+    if(cortar) l = l.slice(0, LIM);
+    const ayuda = {ejecucion:'Marca «Ejecución» cuando esté hecha.', validacion:'Ejecutadas, esperando validación (ordenadas por fecha de revisión).', terminada:'Ejecutadas y validadas.'}[f];
+    return `<div class="kb-col k-${f} drop" data-fase="${f}"><h3>${FASES[f]} <span class="n">${total}</span></h3><p class="hint">${ayuda}</p>
+      ${l.map(t => filaTarea(t, {drag:1})).join('') || vacio('Nada aquí.')}
+      ${cortar ? `<button class="lnk" style="margin:8px 4px" data-act="ui" data-k="verTerm" data-v="1">Ver las ${total} terminadas</button>` : ''}</div>`;
+  };
+  const cuerpo = `<div class="kb">${col('ejecucion')}${col('validacion')}${col('terminada')}</div>`;
+  return `<div class="vh"><div><h1>Tareas</h1><p>${tareas().filter(t => !ejec(t)).length} pendientes de ejecución · ${tareas().filter(t => fase(t) === 'validacion').length} pendientes de validación · arrastra una tarea para cambiarla de columna</p></div><button class="btn pri" data-act="new-t">+ Nueva tarea</button></div>
   <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar tarea…" value="${esc(UI.q)}" style="min-width:220px">
-    ${segUI('test', {pend:'Pendientes', hechas:'Hechas', todas:'Todas'}, UI.test)}
     ${segUI('turg', {todas:'Toda urgencia', alta:'Urgente', media:'Media', baja:'Baja'}, UI.turg)}
     <select class="sel" data-ui="tproj"><option value="">Todos los proyectos</option><option value="_" ${UI.tproj === '_' ? 'selected' : ''}>Tareas sueltas</option>${projOpts}</select>
     ${filtroResp()}</div>${cuerpo}`;
@@ -862,7 +924,7 @@ function mesGrid(){
   return html + `</div></div>`;
 }
 function sinProgramar(){
-  const ts = filtrarResp(tareas()).filter(t => !hecha(t) && !t.fecha_inicio).sort(sortT);
+  const ts = filtrarResp(tareas()).filter(t => !ejec(t) && !t.fecha_inicio).sort(sortT);
   return `<aside class="us drop" data-unsched="1"><h3>Sin programar <span>${ts.length}</span></h3>
     <p class="hint">Arrastra una tarea al calendario para decidir cuándo empezarla. Suelta aquí una tarea del calendario para desprogramarla.</p>
     ${ts.map(t => `<div class="us-i u-${t.urgencia || 'media'}" draggable="true" data-drag="${t.id}" data-act="edit-t" data-id="${t.id}">
@@ -875,12 +937,14 @@ function sinProgramar(){
    ========================================================= */
 function atencion(t){
   const h = hoy(), dom = addDays(lunes(h), 6);
-  return !hecha(t) && (!t.fecha_entrega || t.fecha_entrega <= dom || (t.estado === 'pendiente' && t.fecha_inicio && t.fecha_inicio < h));
+  if(hecha(t)) return false;
+  if(fase(t) === 'validacion') return !t.fecha_revision || t.fecha_revision <= dom;
+  return !t.fecha_entrega || t.fecha_entrega <= dom || (t.fecha_inicio && t.fecha_inicio < h);
 }
 function vRevision(){
   const h = hoy(), lun = lunes(h), dom = addDays(lun, 6), hace7 = addDays(h, -7);
   const todas = filtrarResp(tareas());
-  const pend = todas.filter(t => !hecha(t));
+  const pend = todas.filter(t => !ejec(t)), porValidar = todas.filter(t => fase(t) === 'validacion');
   const hechas7 = todas.filter(t => hecha(t) && t.completada_en >= hace7);
   const aTiempo = hechas7.filter(t => plazo(t).c === 'ok').length;
   const visibles = t => (!hecha(t) || t.completada_en >= hace7) && (!UI.rvAtencion || atencion(t));
@@ -894,11 +958,12 @@ function vRevision(){
   if(sueltas.length) bloques += rvBloque(null, sueltas);
   return `<div class="vh"><div><h1>Revisión semanal</h1><p>Semana del ${fLarga(lun)} al ${fLarga(dom)} · Repasad lo pendiente, comprobad si se cumplieron las fechas y reprogramad.</p></div>
     <button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
-  <div class="kpis">${kpi(pend.length, 'Tareas pendientes')}${kpi(pend.filter(t => t.fecha_entrega && t.fecha_entrega < h).length, 'Vencidas', 'k-rojo')}
+  <div class="kpis">${kpi(pend.length, 'Pendientes de ejecución')}${kpi(porValidar.length, 'Pendientes de validación')}
+    ${kpi(pend.filter(t => t.fecha_entrega && t.fecha_entrega < h).length, 'Vencidas', 'k-rojo')}
     ${kpi(pend.filter(t => t.fecha_entrega >= lun && t.fecha_entrega <= dom).length, 'Se entregan esta semana')}
-    ${kpi(`${aTiempo}/${hechas7.length}`, 'Hechas en 7 días (a tiempo)', 'k-verde')}
+    ${kpi(`${aTiempo}/${hechas7.length}`, 'Terminadas en 7 días (a tiempo)', 'k-verde')}
     ${kpi(pend.filter(t => nRep(t) > 0).length, 'Pendientes reprogramadas')}${kpi(pend.filter(t => !t.fecha_entrega).length, 'Sin fecha de entrega')}</div>
-  <div class="bar">${filtroResp()}<label class="chkl"><input type="checkbox" data-ui="rvAtencion" ${UI.rvAtencion ? 'checked' : ''}> Solo lo que necesita atención (vencido, sin fecha, sin empezar o para esta semana)</label></div>
+  <div class="bar">${filtroResp()}<label class="chkl"><input type="checkbox" data-ui="rvAtencion" ${UI.rvAtencion ? 'checked' : ''}> Solo lo que necesita atención (vencido, sin fecha, inicio pasado, o entrega/revisión esta semana)</label></div>
   ${bloques || `<div class="empty">No hay nada pendiente. ¡Buen trabajo!</div>`}`;
 }
 function fechaInline(k, r, f, mas7){
@@ -908,30 +973,31 @@ function fechaInline(k, r, f, mas7){
 }
 const selInline = (k, r, f, opts) => `<select class="sel ${f === 'urgencia' ? 'urg urg-' + (r.urgencia || 'media') : ''}" data-k="${k}" data-id="${r.id}" data-f="${f}">${Object.entries(opts).map(([v, l]) => `<option value="${v}" ${r[f] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
 function rvBloque(p, ts){
-  ts.sort((a, b) => (hecha(a) - hecha(b)) || sortT(a, b));
+  ts.sort((a, b) => fase(a).localeCompare(fase(b)) || sortT(a, b));
   const todas = p ? tareasDe(p.id) : [];
   const cab = p ? `<div class="rv-ph"><div class="rv-pt"><h3><a data-act="edit-p" data-id="${p.id}">${esc(p.titulo)}</a></h3>${avCreador(p, 'o')}
-        ${selInline('proyectos', p, 'urgencia', URG)}${selInline('proyectos', p, 'estado', EST_P)}
-        <span class="hint">${todas.filter(hecha).length}/${todas.length} hechas</span></div>
+        ${selInline('proyectos', p, 'urgencia', URG)}${checks('proyectos', p)}
+        <span class="hint">${todas.filter(hecha).length}/${todas.length} tareas terminadas</span></div>
       <div class="rv-pf"><div class="lab">Inicio ${fechaInline('proyectos', p, 'fecha_inicio')}</div><div class="lab">Entrega ${fechaInline('proyectos', p, 'fecha_entrega', true)}</div>${chipPlazo(p)}${nRep(p) ? `<span class="rep" title="Veces que se ha cambiado la entrega">↻ ${nRep(p)}</span>` : ''}</div></div>`
     : `<div class="rv-ph"><div class="rv-pt"><h3>Tareas sueltas</h3><span class="hint">Sin proyecto</span></div></div>`;
   return `<section class="rv-p">${cab}<div class="rv-tw"><table class="rv-t">
-    <thead><tr><th style="width:34px"></th><th>Tarea</th><th>Para</th><th>Urgencia</th><th>Empezar</th><th>Entrega</th><th>Situación</th><th title="Veces que se ha cambiado la fecha de entrega">↻</th></tr></thead>
+    <thead><tr><th>Estado</th><th>Tarea</th><th>Para</th><th>Urgencia</th><th>Empezar</th><th>Entrega</th><th>Revisión</th><th>Situación</th><th title="Veces que se ha cambiado la fecha de entrega">↻</th></tr></thead>
     <tbody>${ts.map(rvFila).join('')}
-    <tr class="rv-add"><td></td><td colspan="7"><input class="quick-add" data-proj="${p ? p.id : ''}" placeholder="+ Añadir tarea${p ? ' a este proyecto' : ''} y pulsar Intro"></td></tr></tbody></table></div></section>`;
+    <tr class="rv-add"><td></td><td colspan="8"><input class="quick-add" data-proj="${p ? p.id : ''}" placeholder="+ Añadir tarea${p ? ' a este proyecto' : ''} y pulsar Intro"></td></tr></tbody></table></div></section>`;
 }
 function rvFila(t){
-  const noEmp = !hecha(t) && t.estado === 'pendiente' && t.fecha_inicio && t.fecha_inicio < hoy();
   const reprog = t.entrega_original && t.fecha_entrega && t.entrega_original !== t.fecha_entrega;
   const nc = (t.comentarios || []).length;
+  const revVenc = fase(t) === 'validacion' && t.fecha_revision && t.fecha_revision < hoy();
   return `<tr class="${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}">
-    <td><button class="chk ${hecha(t) ? 'on' : ''}" data-act="toggle-t" data-id="${t.id}" title="${hecha(t) ? 'Marcar como pendiente' : 'Marcar como hecha'}"></button></td>
+    <td>${checks('tareas', t)}</td>
     <td class="rv-tit"><a data-act="edit-t" data-id="${t.id}">${esc(t.titulo)}</a>
-      <div class="tr-sub">${avCreador(t)}<span>${EST_T[t.estado] || ''}</span>${nc ? `<span>💬 ${nc}</span>` : ''}</div></td>
+      <div class="tr-sub">${avCreador(t)}${chipFase(t)}${nc ? `<span>💬 ${nc}</span>` : ''}</div></td>
     <td>${selInline('tareas', t, 'responsable', RESP)}</td>
     <td>${selInline('tareas', t, 'urgencia', URG)}</td>
-    <td>${fechaInline('tareas', t, 'fecha_inicio')}${noEmp ? '<div class="warn">Sin empezar</div>' : ''}</td>
+    <td>${fechaInline('tareas', t, 'fecha_inicio')}</td>
     <td>${fechaInline('tareas', t, 'fecha_entrega', true)}${reprog ? `<div class="orig">Inicial: ${fCorta(t.entrega_original)}</div>` : ''}</td>
+    <td>${fechaInline('tareas', t, 'fecha_revision')}${revVenc ? '<div class="warn">Revisión pasada</div>' : ''}</td>
     <td>${chipPlazo(t)}</td>
     <td class="rep">${nRep(t) ? '↻ ' + nRep(t) : ''}</td></tr>`;
 }
@@ -957,6 +1023,20 @@ function campoFecha(name, label, val){
     <button type="button" class="qb ${val === m ? 'on' : ''}" data-q="1">Mañana</button>
     <input type="date" name="${name}" value="${val || ''}">
     <button type="button" class="qx" data-q="x" title="Quitar fecha">×</button></div></div>`;
+}
+function campoChecks(r){
+  return `<div class="fl"><span>Estado</span><div class="estado-ck">
+    <label class="ckl"><input type="checkbox" name="ejecutada" ${r.ejecutada ? 'checked' : ''}> Ejecución completada <small>${infoCheck(r, 'ejecutada')}</small></label>
+    <label class="ckl"><input type="checkbox" name="validada" ${r.validada ? 'checked' : ''}> Validación finalizada <small>${infoCheck(r, 'validada')}</small></label>
+    <span id="fase-form">${chipFase(r)}</span></div></div>`;
+}
+// En el formulario: validar marca la ejecución y desmarcar la ejecución quita la validación
+function syncChecksForm(el){
+  const f = el.form, e = f.elements.ejecutada, v = f.elements.validada;
+  if(el === v && v.checked) e.checked = true;
+  if(el === e && !e.checked) v.checked = false;
+  const fz = $('#fase-form');
+  if(fz) fz.innerHTML = chipFase({ejecutada:e.checked, validada:v.checked});
 }
 function metaTxt(r, gen){
   if(!r.creado_en) return '';
@@ -992,10 +1072,8 @@ function formTarea(id, preset = {}){
       <label class="fl">Proyecto<select name="proyecto_id"><option value="">— Sin proyecto —</option>${ps.map(p => `<option value="${p.id}" ${p.id === t.proyecto_id ? 'selected' : ''}>${esc(p.titulo)}</option>`).join('')}</select></label>
       <div class="fl"><span>Para</span>${seg('responsable', RESP, t.responsable)}</div>
     </div>
-    <div class="row2">
-      <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, t.urgencia || 'media', 'urgs')}</div>
-      <div class="fl"><span>Estado</span>${seg('estado', EST_T, t.estado || 'pendiente')}</div>
-    </div>
+    <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, t.urgencia || 'media', 'urgs')}</div>
+    ${campoChecks(t)}
     <div class="fechas">
       <div class="fila">${campoFecha('fecha_inicio', 'Empezar a hacerla', t.fecha_inicio)}
         <label class="fl">Hora<input type="time" name="hora_inicio" step="900" value="${t.hora_inicio || ''}"></label>
@@ -1011,7 +1089,13 @@ function formTarea(id, preset = {}){
     ${id ? `<button class="btn del" data-act="del-t" data-id="${id}">Borrar</button>` : ''}
     <button class="btn" data-act="close">Cancelar</button><button class="btn pri" data-act="save-t">${id ? 'Guardar' : 'Crear tarea'}</button></div>`);
 }
-function leerForm(form){ const o = {}; new FormData(form).forEach((v, k) => { o[k] = typeof v === 'string' ? v.trim() : v; }); return o; }
+function leerForm(form){
+  const o = {};
+  new FormData(form).forEach((v, k) => { o[k] = typeof v === 'string' ? v.trim() : v; });
+  o.ejecutada = !!form.elements.ejecutada.checked;
+  o.validada = !!form.elements.validada.checked;
+  return o;
+}
 function guardarFormTarea(){
   const f = $('#ft'), o = leerForm(f);
   if(!o.titulo){ f.titulo.classList.add('err'); f.titulo.focus(); return; }
@@ -1035,7 +1119,7 @@ function formProyecto(id){
       <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, p.urgencia || 'media', 'urgs')}</div>
       <div class="fl"><span>Responsable</span>${seg('responsable', RESP, p.responsable || 'ambos')}</div>
     </div>
-    <div class="fl"><span>Estado</span>${seg('estado', EST_P, p.estado || 'pendiente')}</div>
+    ${campoChecks(p)}
     <div class="fechas">
       <div class="fila">${campoFecha('fecha_inicio', 'Empezar', p.fecha_inicio)}</div>
       <div class="fila">${campoFecha('fecha_entrega', 'Fecha de entrega', p.fecha_entrega)}</div>
@@ -1140,7 +1224,12 @@ const ACC = {
   'new-p': () => formProyecto(null),
   'edit-t': el => formTarea(el.dataset.id),
   'edit-p': el => formProyecto(el.dataset.id),
-  'toggle-t': el => { const t = DB.tareas[el.dataset.id]; if(t){ actualizar('tareas', t.id, {estado:hecha(t) ? 'pendiente' : 'hecha'}); if(!hecha(t)) toast('¡Hecha!'); } },
+  chk: el => {
+    const {k, id, f} = el.dataset, r = DB[k][id];
+    if(!r) return;
+    const r2 = actualizar(k, id, {[f]: !r[f]});
+    toast(r2[f] ? (hecha(r2) ? '¡Terminada! Pasa a Terminados' : 'Ejecutada · pendiente de validación') : (f === 'ejecutada' ? 'Vuelve a pendiente de ejecución' : 'Vuelve a pendiente de validación'));
+  },
   'new-at': el => formTarea(null, {fecha_inicio:el.dataset.date, hora_inicio:el.dataset.time || ''}),
   'goto-day': el => { UI.vista = 'calendario'; UI.cal = 'dia'; UI.calFecha = el.dataset.date; guardarUI(); render(); },
   'cal-hoy': () => { UI.calFecha = hoy(); guardarUI(); render(); },
@@ -1229,6 +1318,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const el = e.target;
   if(el.closest('.dq')) syncDq(el.closest('.dq'));
+  if(el.form && (el.name === 'ejecutada' || el.name === 'validada')) syncChecksForm(el);
   if(el.dataset.ui === 'q'){ UI.q = el.value; render(); }
   if(el.classList.contains('err')) el.classList.remove('err');
 });
@@ -1290,7 +1380,10 @@ document.addEventListener('drop', e => {
   if(!d) return;
   e.preventDefault();
   const t = DB.tareas[dragId], camb = {};
-  if(t){
+  if(t && d.dataset.fase){
+    const f = d.dataset.fase;
+    if(f !== fase(t)) actualizar('tareas', t.id, {ejecutada:f !== 'ejecucion', validada:f === 'terminada'});
+  } else if(t){
     if(d.dataset.unsched){ camb.fecha_inicio = ''; camb.hora_inicio = ''; }
     else {
       camb.fecha_inicio = d.dataset.date;

@@ -91,6 +91,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .urg-baja{background:#F1F5F9;color:#475569}
 .resp,.est,.ptag{font-size:12px;border-radius:6px;padding:1px 7px;white-space:nowrap;background:var(--az0);color:var(--az8);border:1px solid var(--az1)}
 .est{background:#fff;color:var(--tx2);border-color:var(--bd)}
+.resp.val{background:#F0FDF4;color:var(--verde);border-color:#BBF7D0}
 .ptag{background:#fff;color:var(--az7);border-color:var(--az2);font-weight:600}
 .pl{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
 .pl-venc{background:var(--rojo);color:#fff}
@@ -146,6 +147,16 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .secc>h2{font-size:15px;color:var(--tx2);display:flex;align-items:center;gap:8px;margin:0 0 10px 2px}
 .secc>h2 .n{background:var(--az1);color:var(--az8);border-radius:10px;padding:0 8px;font-size:12px}
 .secc>details>summary{cursor:pointer;font-size:15px;font-weight:600;color:var(--tx2);margin:0 0 10px 2px}
+
+/* POR PERSONA */
+.pers-g{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.pers-g.dos{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pers{display:grid;gap:14px;align-content:start}
+.pers-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:4px 2px}
+.pers-h h2{font-size:20px;color:var(--az9)}
+.pers-h .av{width:36px;height:36px;font-size:15px}
+.pers .tr{flex-wrap:wrap}
+@media (max-width:1100px){.pers-g.dos{grid-template-columns:minmax(0,1fr)}}
 
 /* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
@@ -265,7 +276,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .rv-pf{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--tx2)}
 .rv-pf .lab{display:flex;align-items:center;gap:6px}
 .rv-tw{overflow-x:auto}
-.rv-t{width:100%;border-collapse:collapse;min-width:1240px}
+.rv-t{width:100%;border-collapse:collapse;min-width:1320px}
 .rv-t th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mu);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--bd);background:#fff}
 .rv-t td{padding:7px 8px;border-bottom:1px solid #F1F5F9;vertical-align:top}
 .rv-t tr:last-child td{border-bottom:0}
@@ -384,6 +395,7 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
     <button class="tab" data-act="vista" data-v="hoy">Hoy</button>
     <button class="tab" data-act="vista" data-v="proyectos">Proyectos</button>
     <button class="tab" data-act="vista" data-v="tareas">Tareas</button>
+    <button class="tab" data-act="vista" data-v="personas">Por persona</button>
     <button class="tab" data-act="vista" data-v="calendario">Calendario</button>
     <button class="tab" data-act="vista" data-v="revision">Revisión semanal</button>
   </nav>
@@ -408,6 +420,8 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
    ========================================================= */
 const USERS = {andrea:{n:'Andrea', i:'A'}, jon:{n:'Jon', i:'J'}};
 const RESP = {jon:'Jon', andrea:'Andrea', ambos:'Ambos'};
+const VALID = {'':'Nadie aparte', jon:'Jon', andrea:'Andrea'};
+const VALID_C = {'':'—', jon:'Jon', andrea:'Andrea'};
 const URG = {alta:'Urgente', media:'Media', baja:'Baja'};
 const URG_ORD = {alta:0, media:1, baja:2};
 const FASES = {ejecucion:'Pendiente de ejecución', validacion:'Pendiente de validación', terminada:'Terminados'};
@@ -431,7 +445,7 @@ let CFG = lsGet('cfg', {url:'', clave:''});
 let DB = lsGet('db', {proyectos:{}, tareas:{}});
 let DIRTY = lsGet('dirty', {proyectos:{}, tareas:{}});
 let UI = Object.assign({vista:'hoy', resp:'todos', cal:'semana', calFecha:'', finde:false, q:'',
-  turg:'todas', tproj:'', rvAtencion:false, verTerm:false}, lsGet('ui', {}));
+  turg:'todas', tproj:'', rvAtencion:false, verTerm:false, persona:'todas'}, lsGet('ui', {}));
 UI.q = '';
 function persist(){ lsSet('db', DB); lsSet('dirty', DIRTY); }
 function guardarUI(){ lsSet('ui', UI); }
@@ -471,7 +485,18 @@ const ejec = r => !!r.ejecutada;
 const hecha = r => !!(r.ejecutada && r.validada);
 const fase = r => hecha(r) ? 'terminada' : r.ejecutada ? 'validacion' : 'ejecucion';
 const proyVivo = id => id && DB.proyectos[id] && !DB.proyectos[id].borrado;
-const coincideResp = r => UI.resp === 'todos' || !r.responsable || r.responsable === UI.resp || r.responsable === 'ambos';
+// responsable = quien ejecuta (obligatorio); validador = quien valida (opcional:
+// si está vacío, valida la misma persona que ejecuta)
+const ejecutaU = (r, u) => !r.responsable || r.responsable === u || r.responsable === 'ambos';
+const validaU = (r, u) => r.validador ? r.validador === u : ejecutaU(r, u);
+// Filtro por persona: lo que le toca según la fase (ejecutar o validar)
+function tocaA(r, u){
+  const f = fase(r);
+  if(f === 'ejecucion') return ejecutaU(r, u);
+  if(f === 'validacion') return validaU(r, u);
+  return ejecutaU(r, u) || validaU(r, u);
+}
+const coincideResp = r => UI.resp === 'todos' || tocaA(r, UI.resp);
 const filtrarResp = l => l.filter(coincideResp);
 const nRep = r => (r.historial || []).filter(h => h.campo === 'fecha_entrega' && h.de).length;
 const sortT = (a, b) => (a.fecha_entrega || '9999').localeCompare(b.fecha_entrega || '9999')
@@ -502,7 +527,7 @@ function unir(a, b){
 
 function crear(k, o){
   const base = {id:uid(k === 'tareas' ? 't' : 'p'), proyecto_id:'', titulo:'', descripcion:'', urgencia:'media', estado:'pendiente',
-    ejecutada:false, ejecutada_por:'', ejecutada_en:'', validada:false, validada_por:'', validada_en:'',
+    ejecutada:false, ejecutada_por:'', ejecutada_en:'', validada:false, validada_por:'', validada_en:'', validador:'',
     responsable:'jon', fecha_inicio:'', hora_inicio:'', duracion:k === 'tareas' ? 60 : '', fecha_revision:'', fecha_entrega:'',
     hora_entrega:'', entrega_original:'', completada_en:'', creado_por:ME, creado_en:nowISO(), comentarios:[], historial:[], borrado:false};
   return guardarRec(k, Object.assign(base, o), null);
@@ -647,7 +672,8 @@ function novedades(){
 function av(u, title){ if(!USERS[u]) return ''; return `<span class="av av-${u}" title="${esc(title || nombre(u))}">${USERS[u].i}</span>`; }
 const avCreador = (r, gen) => av(r.creado_por, `Cread${gen || 'a'} por ${nombre(r.creado_por)} · ${fTs(r.creado_en)}`);
 const chipUrg = u => `<span class="urg urg-${u || 'media'}">${URG[u || 'media']}</span>`;
-const chipResp = r => r ? `<span class="resp">Para ${RESP[r] || r}</span>` : '';
+const chipResp = r => (r.responsable ? `<span class="resp" title="Quién lo ejecuta">Ejecuta ${RESP[r.responsable] || r.responsable}</span>` : '')
+  + (r.validador ? `<span class="resp val" title="Quién lo valida">Valida ${nombre(r.validador)}</span>` : '');
 function plazo(r){
   const h = hoy();
   // El cumplimiento se mide con la fecha de ejecución frente a la de entrega
@@ -680,7 +706,7 @@ function filaTarea(t, o = {}){
   return `<div class="tr ${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}" data-act="edit-t" data-id="${t.id}" ${o.drag ? `draggable="true" data-drag="${t.id}"` : ''}>
     <div class="tr-main">
       <div class="tr-tit">${esc(t.titulo)}</div>
-      <div class="tr-sub">${p ? `<span class="ptag">${esc(p.titulo)}</span>` : ''}${chipUrg(t.urgencia)}${chipPlazo(t)}${chipResp(t.responsable)}
+      <div class="tr-sub">${p ? `<span class="ptag">${esc(p.titulo)}</span>` : ''}${chipUrg(t.urgencia)}${chipPlazo(t)}${chipResp(t)}
         ${t.fecha_inicio ? `<span>Empieza ${fCorta(t.fecha_inicio)}${t.hora_inicio ? ' ' + t.hora_inicio : ''}</span>` : ''}
         ${t.fecha_entrega ? `<span>Entrega ${fCorta(t.fecha_entrega)}${t.hora_entrega ? ' ' + t.hora_entrega : ''}</span>` : ''}
         ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}
@@ -760,7 +786,7 @@ function pcard(p){
   const nh = todas.filter(hecha).length, pct = todas.length ? Math.round(nh / todas.length * 100) : 0;
   return `<article class="pc u-${p.urgencia || 'media'} ${hecha(p) ? 'done' : ''} ${esNovedad(p) ? 'nuevo' : ''}">
     <div class="pc-h"><h3><a data-act="edit-p" data-id="${p.id}">${esc(p.titulo)}</a></h3>${avCreador(p, 'o')}</div>
-    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p.responsable)}${chipPlazo(p)}</div>
+    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p)}${chipPlazo(p)}</div>
     <div class="pc-f">${fechasTxt(p)}</div>
     <div style="margin-bottom:8px">${checks('proyectos', p)}</div>
     <div class="prog"><i style="width:${pct}%"></i></div><div class="prog-t">${nh} de ${todas.length} tareas terminadas${todas.length && nh === todas.length && !hecha(p) ? ' · <b>todas terminadas: ¿cerrar el proyecto?</b>' : ''}</div>
@@ -830,7 +856,7 @@ function vCalendario(){
     ${segUI('cal', {dia:'Día', semana:'Semana', mes:'Mes'}, UI.cal)}
     ${UI.cal === 'semana' ? `<label class="chkl"><input type="checkbox" data-ui="finde" ${UI.finde ? 'checked' : ''}> Fin de semana</label>` : ''}
     ${filtroResp()}</div>
-  <div class="leyenda"><span><i style="background:#CFFAFE"></i>Para Jon</span><span><i style="background:var(--az1)"></i>Para Andrea</span><span><i style="background:#E0E7FF"></i>Ambos</span>
+  <div class="leyenda"><span><i style="background:#CFFAFE"></i>Ejecuta Jon</span><span><i style="background:var(--az1)"></i>Ejecuta Andrea</span><span><i style="background:#E0E7FF"></i>Ambos</span>
     <span><i style="border:1.5px dashed var(--rojo)"></i>Entrega</span><span><i style="background:var(--az8)"></i>Hito de proyecto</span><span>Borde: urgencia</span>
     <span class="hint">· Haz clic en un hueco para crear una tarea a esa hora; arrastra para moverla.</span></div>
   <div class="cal-wrap">${sinProgramar()}<div>${UI.cal === 'mes' ? mesGrid() : timeGrid(diasVisibles(), false)}</div></div>`;
@@ -966,12 +992,43 @@ function vRevision(){
   <div class="bar">${filtroResp()}<label class="chkl"><input type="checkbox" data-ui="rvAtencion" ${UI.rvAtencion ? 'checked' : ''}> Solo lo que necesita atención (vencido, sin fecha, inicio pasado, o entrega/revisión esta semana)</label></div>
   ${bloques || `<div class="empty">No hay nada pendiente. ¡Buen trabajo!</div>`}`;
 }
+/* =========================================================
+   VISTA: POR PERSONA
+   ========================================================= */
+function vPersonas(){
+  const h = hoy(), hace7 = addDays(h, -7);
+  const us = UI.persona === 'jon' || UI.persona === 'andrea' ? [UI.persona] : ['jon', 'andrea'];
+  const ts = tareas(), ps = proyectos();
+  const sub = (titulo, l, vacioTxt, cls = '') => `<section class="card ${cls}"><h2>${titulo} <span class="n">${l.length}</span></h2>${l.map(t => filaTarea(t)).join('') || vacio(vacioTxt)}</section>`;
+  const filaProy = p => `<div class="tr" data-act="edit-p" data-id="${p.id}"><div class="tr-main"><div class="tr-tit">${esc(p.titulo)}</div>
+    <div class="tr-sub">${chipUrg(p.urgencia)}${chipFase(p)}${chipPlazo(p)}${chipResp(p)}</div></div>${checks('proyectos', p)}</div>`;
+  const bloque = u => {
+    const o = u === 'jon' ? 'andrea' : 'jon';
+    const ejecutar = ts.filter(t => fase(t) === 'ejecucion' && ejecutaU(t, u)).sort(sortT);
+    const validar = ts.filter(t => fase(t) === 'validacion' && validaU(t, u)).sort(sortRev);
+    const esperando = ts.filter(t => fase(t) === 'validacion' && ejecutaU(t, u) && t.validador && t.validador !== u).sort(sortRev);
+    const term = ts.filter(t => hecha(t) && t.completada_en >= hace7 && (ejecutaU(t, u) || validaU(t, u))).sort(sortTerm);
+    const proys = ps.filter(p => !hecha(p) && (ejecutaU(p, u) || validaU(p, u))).sort(sortP);
+    const venc = ejecutar.filter(t => t.fecha_entrega && t.fecha_entrega < h).length;
+    return `<div class="pers">
+      <div class="pers-h">${av(u)}<h2>${nombre(u)}</h2><span class="hint">${ejecutar.length} por ejecutar${venc ? ` · <b style="color:var(--rojo)">${venc} vencida${venc > 1 ? 's' : ''}</b>` : ''} · ${validar.length} por validar</span></div>
+      ${sub('Tiene que ejecutar', ejecutar, 'Nada pendiente de ejecutar.')}
+      ${sub('Tiene que validar', validar, 'Nada pendiente de validar.')}
+      ${sub(`Ejecutado, esperando a que valide ${nombre(o)}`, esperando, 'Nada esperando validación.')}
+      ${proys.length ? `<section class="card"><h2>Proyectos abiertos <span class="n">${proys.length}</span></h2>${proys.map(filaProy).join('')}</section>` : ''}
+      <details class="card"><summary class="hint" style="cursor:pointer;font-weight:600">Terminadas en los últimos 7 días (${term.length})</summary>${term.map(t => filaTarea(t)).join('') || vacio('Ninguna.')}</details>
+    </div>`;
+  };
+  return `<div class="vh"><div><h1>Por persona</h1><p>Qué tiene que ejecutar y qué tiene que validar cada uno. Si una tarea no tiene validador, la valida quien la ejecuta.</p></div>
+    ${segUI('persona', {todas:'Los dos', jon:'Jon', andrea:'Andrea'}, us.length > 1 ? 'todas' : us[0])}</div>
+  <div class="pers-g ${us.length > 1 ? 'dos' : ''}">${us.map(bloque).join('')}</div>`;
+}
 function fechaInline(k, r, f, mas7){
   const a = `data-k="${k}" data-id="${r.id}" data-f="${f}"`;
   return `<div class="fi"><button class="qb sm ${r[f] === hoy() ? 'on' : ''}" data-act="set-fecha" ${a} data-v="hoy">Hoy</button>
     <input type="date" value="${r[f] || ''}" ${a}>${mas7 ? `<button class="qb sm" data-act="set-fecha" ${a} data-v="+7" title="Una semana más tarde">+7</button>` : ''}</div>`;
 }
-const selInline = (k, r, f, opts) => `<select class="sel ${f === 'urgencia' ? 'urg urg-' + (r.urgencia || 'media') : ''}" data-k="${k}" data-id="${r.id}" data-f="${f}">${Object.entries(opts).map(([v, l]) => `<option value="${v}" ${r[f] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+const selInline = (k, r, f, opts) => `<select class="sel ${f === 'urgencia' ? 'urg urg-' + (r.urgencia || 'media') : ''}" data-k="${k}" data-id="${r.id}" data-f="${f}">${Object.entries(opts).map(([v, l]) => `<option value="${v}" ${(r[f] || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
 function rvBloque(p, ts){
   ts.sort((a, b) => fase(a).localeCompare(fase(b)) || sortT(a, b));
   const todas = p ? tareasDe(p.id) : [];
@@ -981,9 +1038,9 @@ function rvBloque(p, ts){
       <div class="rv-pf"><div class="lab">Inicio ${fechaInline('proyectos', p, 'fecha_inicio')}</div><div class="lab">Entrega ${fechaInline('proyectos', p, 'fecha_entrega', true)}</div>${chipPlazo(p)}${nRep(p) ? `<span class="rep" title="Veces que se ha cambiado la entrega">↻ ${nRep(p)}</span>` : ''}</div></div>`
     : `<div class="rv-ph"><div class="rv-pt"><h3>Tareas sueltas</h3><span class="hint">Sin proyecto</span></div></div>`;
   return `<section class="rv-p">${cab}<div class="rv-tw"><table class="rv-t">
-    <thead><tr><th>Estado</th><th>Tarea</th><th>Para</th><th>Urgencia</th><th>Empezar</th><th>Entrega</th><th>Revisión</th><th>Situación</th><th title="Veces que se ha cambiado la fecha de entrega">↻</th></tr></thead>
+    <thead><tr><th>Estado</th><th>Tarea</th><th>Ejecuta</th><th>Valida</th><th>Urgencia</th><th>Empezar</th><th>Entrega</th><th>Revisión</th><th>Situación</th><th title="Veces que se ha cambiado la fecha de entrega">↻</th></tr></thead>
     <tbody>${ts.map(rvFila).join('')}
-    <tr class="rv-add"><td></td><td colspan="8"><input class="quick-add" data-proj="${p ? p.id : ''}" placeholder="+ Añadir tarea${p ? ' a este proyecto' : ''} y pulsar Intro"></td></tr></tbody></table></div></section>`;
+    <tr class="rv-add"><td></td><td colspan="9"><input class="quick-add" data-proj="${p ? p.id : ''}" placeholder="+ Añadir tarea${p ? ' a este proyecto' : ''} y pulsar Intro"></td></tr></tbody></table></div></section>`;
 }
 function rvFila(t){
   const reprog = t.entrega_original && t.fecha_entrega && t.entrega_original !== t.fecha_entrega;
@@ -994,6 +1051,7 @@ function rvFila(t){
     <td class="rv-tit"><a data-act="edit-t" data-id="${t.id}">${esc(t.titulo)}</a>
       <div class="tr-sub">${avCreador(t)}${chipFase(t)}${nc ? `<span>💬 ${nc}</span>` : ''}</div></td>
     <td>${selInline('tareas', t, 'responsable', RESP)}</td>
+    <td>${selInline('tareas', t, 'validador', VALID_C)}</td>
     <td>${selInline('tareas', t, 'urgencia', URG)}</td>
     <td>${fechaInline('tareas', t, 'fecha_inicio')}</td>
     <td>${fechaInline('tareas', t, 'fecha_entrega', true)}${reprog ? `<div class="orig">Inicial: ${fCorta(t.entrega_original)}</div>` : ''}</td>
@@ -1061,7 +1119,7 @@ function historialHTML(r){
     `<div>${fTs(x.ts)} · <b>${nombre(x.por)}</b> cambió ${x.campo === 'fecha_entrega' ? 'la entrega' : 'el inicio'}: ${fCorta(x.de)} → ${x.a ? fCorta(x.a) : 'sin fecha'}</div>`).join('')}</details>`;
 }
 function formTarea(id, preset = {}){
-  const t = id ? DB.tareas[id] : Object.assign({urgencia:'media', estado:'pendiente', responsable:lsGet('ultResp', 'jon'), duracion:60, proyecto_id:''}, preset);
+  const t = id ? DB.tareas[id] : Object.assign({urgencia:'media', estado:'pendiente', responsable:lsGet('ultResp', 'jon'), validador:lsGet('ultVal', ''), duracion:60, proyecto_id:''}, preset);
   if(!t) return;
   const ps = proyectos().filter(p => !hecha(p) || p.id === t.proyecto_id).sort((a, b) => (a.titulo || '').localeCompare(b.titulo || ''));
   const dur = String(t.duracion || 60);
@@ -1070,9 +1128,9 @@ function formTarea(id, preset = {}){
     <label class="fl">Tarea<input name="titulo" class="big" value="${esc(t.titulo)}" placeholder="¿Qué hay que hacer?" ${id ? '' : 'autofocus'}></label>
     <div class="row2">
       <label class="fl">Proyecto<select name="proyecto_id"><option value="">— Sin proyecto —</option>${ps.map(p => `<option value="${p.id}" ${p.id === t.proyecto_id ? 'selected' : ''}>${esc(p.titulo)}</option>`).join('')}</select></label>
-      <div class="fl"><span>Para</span>${seg('responsable', RESP, t.responsable)}</div>
+      <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, t.urgencia || 'media', 'urgs')}</div>
     </div>
-    <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, t.urgencia || 'media', 'urgs')}</div>
+    ${campoPersonas(t)}
     ${campoChecks(t)}
     <div class="fechas">
       <div class="fila">${campoFecha('fecha_inicio', 'Empezar a hacerla', t.fecha_inicio)}
@@ -1094,14 +1152,29 @@ function leerForm(form){
   new FormData(form).forEach((v, k) => { o[k] = typeof v === 'string' ? v.trim() : v; });
   o.ejecutada = !!form.elements.ejecutada.checked;
   o.validada = !!form.elements.validada.checked;
+  if(o.validador == null) o.validador = '';
   return o;
+}
+function campoPersonas(r){
+  return `<div class="row2">
+      <div class="fl"><span>Quién lo ejecuta <b style="color:var(--rojo)">*</b></span>${seg('responsable', RESP, r.responsable)}</div>
+      <div class="fl"><span>Quién lo valida <span class="hint" style="font-weight:400">(opcional)</span></span>${seg('validador', VALID, r.validador || '')}</div>
+    </div>`;
+}
+function faltaEjecutor(f, o){
+  if(o.responsable) return false;
+  const s = f.querySelector('.seg input[name="responsable"]').closest('.seg');
+  s.style.outline = '2px solid var(--rojo)';
+  toast('Elige quién lo ejecuta');
+  return true;
 }
 function guardarFormTarea(){
   const f = $('#ft'), o = leerForm(f);
   if(!o.titulo){ f.titulo.classList.add('err'); f.titulo.focus(); return; }
+  if(faltaEjecutor(f, o)) return;
   o.duracion = Number(o.duracion) || 60;
   const id = f.dataset.id;
-  if(id) actualizar('tareas', id, o); else { crear('tareas', o); lsSet('ultResp', o.responsable); }
+  if(id) actualizar('tareas', id, o); else { crear('tareas', o); lsSet('ultResp', o.responsable); lsSet('ultVal', o.validador); }
   cerrarModal();
   toast(id ? 'Tarea guardada' : 'Tarea creada');
 }
@@ -1110,15 +1183,13 @@ function listaTareasProyecto(pid){
   return ts.map(t => filaTarea(t, {sinProyecto:1})).join('') || vacio('Este proyecto todavía no tiene tareas.');
 }
 function formProyecto(id){
-  const p = id ? DB.proyectos[id] : {urgencia:'media', estado:'pendiente', responsable:'ambos'};
+  const p = id ? DB.proyectos[id] : {urgencia:'media', estado:'pendiente', responsable:'ambos', validador:''};
   if(!p) return;
   abrirModal(`<div class="mh"><h2>${id ? 'Proyecto' : 'Nuevo proyecto'}</h2><button class="x" data-act="close" title="Cerrar">×</button></div>
   <form id="fp" class="mb" data-id="${id || ''}" autocomplete="off">
     <label class="fl">Nombre del proyecto<input name="titulo" class="big" value="${esc(p.titulo)}" placeholder="Ej.: Digitalización del reporte financiero" ${id ? '' : 'autofocus'}></label>
-    <div class="row2">
-      <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, p.urgencia || 'media', 'urgs')}</div>
-      <div class="fl"><span>Responsable</span>${seg('responsable', RESP, p.responsable || 'ambos')}</div>
-    </div>
+    <div class="fl"><span>Urgencia</span>${seg('urgencia', URG, p.urgencia || 'media', 'urgs')}</div>
+    ${campoPersonas(p)}
     ${campoChecks(p)}
     <div class="fechas">
       <div class="fila">${campoFecha('fecha_inicio', 'Empezar', p.fecha_inicio)}</div>
@@ -1136,6 +1207,7 @@ function formProyecto(id){
 function guardarFormProyecto(){
   const f = $('#fp'), o = leerForm(f);
   if(!o.titulo){ f.titulo.classList.add('err'); f.titulo.focus(); return; }
+  if(faltaEjecutor(f, o)) return;
   const id = f.dataset.id;
   if(id){ actualizar('proyectos', id, o); cerrarModal(); toast('Proyecto guardado'); }
   else { const p = crear('proyectos', o); toast('Proyecto creado. Ahora añade sus tareas.'); formProyecto(p.id); }
@@ -1185,7 +1257,7 @@ function renderSoon(){
   renderPend = true;
   setTimeout(() => { renderPend = false; if(enEdicion()){ renderDiferido = true; return; } render(); }, 0);
 }
-const VISTAS = {hoy:vHoy, proyectos:vProyectos, tareas:vTareas, calendario:vCalendario, revision:vRevision};
+const VISTAS = {hoy:vHoy, proyectos:vProyectos, tareas:vTareas, personas:vPersonas, calendario:vCalendario, revision:vRevision};
 function render(){
   renderDiferido = false;
   if(!VISTAS[UI.vista]) UI.vista = 'hoy';
@@ -1340,7 +1412,7 @@ document.addEventListener('keydown', e => {
     const titulo = el.value.trim();
     if(!titulo) return;
     const pid = el.dataset.proj || '', p = pid && DB.proyectos[pid];
-    crear('tareas', {titulo, proyecto_id:pid, responsable:lsGet('ultResp', 'jon'), urgencia:p ? p.urgencia || 'media' : 'media'});
+    crear('tareas', {titulo, proyecto_id:pid, responsable:lsGet('ultResp', 'jon'), validador:lsGet('ultVal', ''), urgencia:p ? p.urgencia || 'media' : 'media'});
     el.value = '';
     toast('Tarea añadida');
     return;

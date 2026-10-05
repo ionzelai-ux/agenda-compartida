@@ -8,7 +8,11 @@ de Drive a través de Apps Script (`apps-script/Code.gs`).
 
 - **Proyectos y tareas**: cada tarea pertenece a un proyecto (o queda como tarea suelta).
 - **Quién lo creó**: todo lleva la marca de quién lo creó y de quién lo cambió por última vez (A = Andrea, J = Jon).
-- **Para quién**: Jon, Andrea o ambos.
+- **Quién lo ejecuta** (obligatorio: Jon, Andrea o ambos) y **quién lo valida** (opcional; si no se indica,
+  valida la misma persona que ejecuta).
+- **Por persona**: pantalla con lo que cada uno tiene que ejecutar, lo que tiene que validar y lo que ha
+  ejecutado y espera la validación del otro. El filtro Todo / Jon / Andrea de las demás pantallas muestra
+  lo que le toca a esa persona según la fase (ejecutar o validar).
 - **Urgencia**: Urgente, Media o Baja.
 - **Estado con dos checks**: *Ejecución* (completada) y *Validación* (finalizada). Según los checks, cada tarea
   y cada proyecto está en **Pendiente de ejecución**, **Pendiente de validación** o **Terminados** (con los dos).

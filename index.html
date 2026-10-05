@@ -158,6 +158,21 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .pers .tr{flex-wrap:wrap}
 @media (max-width:1100px){.pers-g.dos{grid-template-columns:minmax(0,1fr)}}
 
+/* aviso de cosas nuevas por aceptar */
+#aviso{position:sticky;top:58px;z-index:25;background:#FFFBEB;border-bottom:1px solid #FCD34D;box-shadow:0 2px 6px rgba(180,83,9,.08)}
+#aviso[hidden]{display:none}
+.aviso-in{max-width:1440px;margin:0 auto;padding:9px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#78350F}
+.aviso-in svg{color:#D97706}
+.aviso-in span{flex:1;min-width:200px}
+.acp{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border:1px solid var(--bd);border-left:4px solid var(--az5);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;flex-wrap:wrap}
+.acp-p{border-left-color:var(--az8);background:var(--az0)}
+.acp-main{flex:1;min-width:220px}
+.acp-tipo{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mu);font-weight:600}
+.acp-desc{font-size:13px;color:var(--tx2);margin-top:4px;white-space:pre-line}
+.acp-btns{display:flex;gap:6px;flex:none}
+.acp-new{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:#F59E0B;color:#fff}
+.acp-pend{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;background:#FFFBEB;color:var(--amb);border:1px solid #FCD34D}
+
 /* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;background:linear-gradient(180deg,#fff,var(--az0));box-shadow:var(--sh)}
@@ -382,6 +397,8 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
   .cal-nav h2{min-width:0;font-size:16px}
   .mc{min-height:80px}
   #nov{top:110px}
+  #aviso{position:static}
+  .aviso-in{padding:9px 12px}
 }
 </style>
 </head>
@@ -407,6 +424,7 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
     <button class="me" id="me" data-act="ajustes" title="Ajustes"></button>
   </div>
 </header>
+<div id="aviso" hidden></div>
 <main id="view"></main>
 <div id="nov" hidden></div>
 <div id="modal" hidden></div>
@@ -657,9 +675,10 @@ function novedades(){
     coms.forEach(c => out.push({k, r, por:c.por, ts:c.ts, tipo:'comentó en', txt:c.txt}));
     if(r.actualizado_por && r.actualizado_por !== ME && (r.actualizado_en || '') > v){
       const soloComentario = coms.some(c => c.por === r.actualizado_por && Math.abs(new Date(c.ts) - new Date(r.actualizado_en)) < 3000);
+      const acepto = r.aceptado_por === r.actualizado_por && Math.abs(new Date(r.aceptado_en) - new Date(r.actualizado_en)) < 3000;
       if(!soloComentario){
         const nuevo = r.creado_por !== ME && (r.creado_en || '') > v;
-        out.push({k, r, por:r.actualizado_por, ts:r.actualizado_en, tipo:nuevo ? 'creó' : 'modificó'});
+        out.push({k, r, por:r.actualizado_por, ts:r.actualizado_en, tipo:acepto ? 'aceptó' : nuevo ? 'creó' : 'modificó'});
       }
     }
   }));
@@ -710,7 +729,7 @@ function filaTarea(t, o = {}){
         ${t.fecha_inicio ? `<span>Empieza ${fCorta(t.fecha_inicio)}${t.hora_inicio ? ' ' + t.hora_inicio : ''}</span>` : ''}
         ${t.fecha_entrega ? `<span>Entrega ${fCorta(t.fecha_entrega)}${t.hora_entrega ? ' ' + t.hora_entrega : ''}</span>` : ''}
         ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}
-        ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${avCreador(t)}</div>
+        ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${avCreador(t)}${chipAcept(t)}</div>
     </div>
     ${checks('tareas', t)}
   </div>`;
@@ -786,7 +805,7 @@ function pcard(p){
   const nh = todas.filter(hecha).length, pct = todas.length ? Math.round(nh / todas.length * 100) : 0;
   return `<article class="pc u-${p.urgencia || 'media'} ${hecha(p) ? 'done' : ''} ${esNovedad(p) ? 'nuevo' : ''}">
     <div class="pc-h"><h3><a data-act="edit-p" data-id="${p.id}">${esc(p.titulo)}</a></h3>${avCreador(p, 'o')}</div>
-    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p)}${chipPlazo(p)}</div>
+    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p)}${chipPlazo(p)}${chipAcept(p)}</div>
     <div class="pc-f">${fechasTxt(p)}</div>
     <div style="margin-bottom:8px">${checks('proyectos', p)}</div>
     <div class="prog"><i style="width:${pct}%"></i></div><div class="prog-t">${nh} de ${todas.length} tareas terminadas${todas.length && nh === todas.length && !hecha(p) ? ' · <b>todas terminadas: ¿cerrar el proyecto?</b>' : ''}</div>
@@ -1049,7 +1068,7 @@ function rvFila(t){
   return `<tr class="${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}">
     <td>${checks('tareas', t)}</td>
     <td class="rv-tit"><a data-act="edit-t" data-id="${t.id}">${esc(t.titulo)}</a>
-      <div class="tr-sub">${avCreador(t)}${chipFase(t)}${nc ? `<span>💬 ${nc}</span>` : ''}</div></td>
+      <div class="tr-sub">${avCreador(t)}${chipFase(t)}${nc ? `<span>💬 ${nc}</span>` : ''}${chipAcept(t)}</div></td>
     <td>${selInline('tareas', t, 'responsable', RESP)}</td>
     <td>${selInline('tareas', t, 'validador', VALID_C)}</td>
     <td>${selInline('tareas', t, 'urgencia', URG)}</td>
@@ -1099,6 +1118,8 @@ function syncChecksForm(el){
 function metaTxt(r, gen){
   if(!r.creado_en) return '';
   let s = `Cread${gen} por <b>${nombre(r.creado_por)}</b> el ${fTs(r.creado_en)}`;
+  if(r.aceptado_en) s += ` · Aceptad${gen} por <b>${nombre(r.aceptado_por)}</b> el ${fTs(r.aceptado_en)}`;
+  else if(r.creado_por && USERS[r.creado_por]) s += ` · <b style="color:var(--amb)">${r.creado_por === ME ? `${nombre(otro())} aún no l${gen} ha aceptado` : 'Pendiente de que l' + gen + ' aceptes'}</b>`;
   if(r.actualizado_en && r.actualizado_en !== r.creado_en) s += ` · Último cambio: ${nombre(r.actualizado_por)}, ${fTs(r.actualizado_en)}`;
   return s;
 }
@@ -1278,6 +1299,64 @@ function render(){
   render._vista = UI.vista + UI.cal;
   const mp = $('#mp-tareas'); if(mp) mp.innerHTML = listaTareasProyecto(mp.dataset.pid);
   const cl = $('#com-list'); if(cl && DB[cl.dataset.k][cl.dataset.id]) cl.innerHTML = listaComs(DB[cl.dataset.k][cl.dataset.id]);
+  renderAviso();
+}
+
+/* =========================================================
+   ACEPTAR LO NUEVO (acuse de recibo de lo que crea la otra persona)
+   ========================================================= */
+const avisados = new Set();
+function porAceptar(){
+  if(!ME) return [];
+  const out = [];
+  ['proyectos', 'tareas'].forEach(k => Object.values(DB[k]).forEach(r => {
+    if(!r.borrado && USERS[r.creado_por] && r.creado_por !== ME && !r.aceptado_en) out.push({k, r});
+  }));
+  // Agrupado por proyecto: primero el proyecto y luego sus tareas
+  const clave = x => x.k === 'proyectos' ? x.r.id + '0' : (x.r.proyecto_id || 'zz') + '1';
+  return out.sort((a, b) => clave(a).localeCompare(clave(b)) || (a.r.creado_en || '').localeCompare(b.r.creado_en || ''));
+}
+function chipAcept(r){
+  if(!ME || !USERS[r.creado_por] || r.aceptado_en) return '';
+  return r.creado_por === ME
+    ? `<span class="acp-pend" title="Todavía no lo ha aceptado">⏳ Sin aceptar por ${nombre(otro())}</span>`
+    : `<span class="acp-new">Nueva · sin aceptar</span>`;
+}
+function renderAviso(){
+  const l = porAceptar(), el = $('#aviso');
+  if(!l.length){ el.hidden = true; el.innerHTML = ''; }
+  else {
+    const nt = l.filter(x => x.k === 'tareas').length, np = l.length - nt, de = nombre(l[0].r.creado_por);
+    const partes = [np ? `${np} proyecto${np > 1 ? 's' : ''}` : '', nt ? `${nt} tarea${nt > 1 ? 's' : ''}` : ''].filter(Boolean).join(' y ');
+    el.innerHTML = `<div class="aviso-in"><svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span><b>${de}</b> ha añadido ${partes} que aún no has aceptado.</span><button class="btn pri" data-act="ver-aceptar">Revisar y aceptar</button></div>`;
+    el.hidden = false;
+  }
+  const lista = $('#acp-list');
+  if(lista){ if(l.length) lista.innerHTML = listaAceptar(l); else { cerrarModal(); toast('Todo aceptado'); } }
+  // Salta solo cuando llega algo que no se había avisado en esta sesión
+  const nuevos = l.filter(x => !avisados.has(x.r.id));
+  if(nuevos.length && $('#modal').hidden){ l.forEach(x => avisados.add(x.r.id)); abrirAceptar(); }
+}
+function listaAceptar(l){
+  return l.map(({k, r}) => {
+    const p = k === 'tareas' && proyVivo(r.proyecto_id) ? DB.proyectos[r.proyecto_id] : null;
+    return `<div class="acp ${k === 'proyectos' ? 'acp-p' : ''}">
+      <div class="acp-main"><div class="acp-tipo">${k === 'proyectos' ? 'Proyecto nuevo' : 'Tarea' + (p ? ' · ' + esc(p.titulo) : '')}</div>
+        <b>${esc(r.titulo)}</b>
+        <div class="tr-sub">${chipUrg(r.urgencia)}${chipResp(r)}${chipPlazo(r)}${r.fecha_entrega ? `<span>Entrega ${fCorta(r.fecha_entrega)}</span>` : ''}<span>${avCreador(r, k === 'tareas' ? 'a' : 'o')} ${fTs(r.creado_en)}</span></div>
+        ${r.descripcion ? `<div class="acp-desc">${esc(r.descripcion)}</div>` : ''}</div>
+      <div class="acp-btns"><button class="btn" data-act="${k === 'tareas' ? 'edit-t' : 'edit-p'}" data-id="${r.id}">Ver</button>
+        <button class="btn pri" data-act="aceptar" data-k="${k}" data-id="${r.id}">✓ Aceptar</button></div></div>`;
+  }).join('');
+}
+function abrirAceptar(){
+  const l = porAceptar();
+  if(!l.length) return;
+  abrirModal(`<div class="mh"><h2>Nuevo de ${nombre(l[0].r.creado_por)}</h2><button class="x" data-act="close" title="Más tarde">×</button></div>
+    <div class="mb"><p class="hint" style="margin:0">Acepta cada tarea o proyecto para dejar constancia de que lo has visto. ${nombre(l[0].r.creado_por)} verá que lo has aceptado.</p>
+    <div id="acp-list">${listaAceptar(l)}</div></div>
+    <div class="mf"><button class="btn" data-act="close">Más tarde</button><button class="btn pri" data-act="aceptar-todo">✓ Aceptar todo (${l.length})</button></div>`);
 }
 document.addEventListener('focusout', () => { if(renderDiferido) setTimeout(() => { if(renderDiferido && !enEdicion()) render(); }, 60); });
 
@@ -1318,6 +1397,12 @@ const ACC = {
     actualizar(k, id, {[f]: v === 'hoy' ? hoy() : addDays(r[f] || hoy(), 7)});
   },
   close: () => cerrarModal(),
+  'ver-aceptar': () => abrirAceptar(),
+  aceptar: el => { actualizar(el.dataset.k, el.dataset.id, {aceptado_por:ME, aceptado_en:nowISO()}); },
+  'aceptar-todo': () => {
+    const ts = nowISO();
+    porAceptar().forEach(({k, r}) => actualizar(k, r.id, {aceptado_por:ME, aceptado_en:ts}));
+  },
   'save-t': () => guardarFormTarea(),
   'save-p': () => guardarFormProyecto(),
   'del-t': el => {

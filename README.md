@@ -28,6 +28,8 @@ de Drive a través de Apps Script (`apps-script/Code.gs`).
 - **Revisión semanal** (la de los lunes): proyectos abiertos con sus tareas pendientes, si se cumplió la fecha o no
   (a tiempo, con retraso, vencida, sin empezar), cuántas veces se ha movido la entrega y la fecha inicial.
   Las fechas, la urgencia y la persona se cambian ahí mismo.
+- **Aceptar lo nuevo**: lo que crea uno le aparece al otro en un aviso y una ventana para aceptarlo (una a una
+  o todo), como acuse de recibo. Quien lo creó ve «⏳ Sin aceptar» hasta entonces y la campana le avisa cuando se acepta.
 - **Comentarios** en cada tarea y proyecto, y un aviso de **novedades** (la campana) con lo que ha hecho la otra persona desde tu última visita.
 - Funciona también sin conexión: guarda en el navegador y sube los cambios cuando vuelve la conexión.
 

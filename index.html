@@ -57,7 +57,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .vh p{margin:2px 0 0;color:var(--mu)}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .bar .grow{flex:1}
-.card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;box-shadow:var(--sh)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px;box-shadow:var(--sh)}
 .card>h2{font-size:15px;color:var(--az9);display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .card>h2 .n{background:var(--az1);color:var(--az8);border-radius:10px;padding:0 8px;font-size:12px}
 .card.c-venc>h2{color:var(--rojo)}.card.c-venc>h2 .n{background:var(--rojo1);color:var(--rojo)}
@@ -104,10 +104,16 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .warn{font-size:12px;color:var(--amb);font-weight:600}
 
 /* fila de tarea */
-.tr{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:9px;cursor:pointer;border:1px solid transparent}
-.tr:hover{background:var(--az0);border-color:var(--az1)}
-.tr+.tr{margin-top:2px}
-.tr.nuevo{background:#FFFBEB;border-color:#FDE68A}
+/* Cada tarea es una tarjeta: borde, sombra y franja izquierda con el color de la urgencia */
+.tr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;cursor:pointer;flex-wrap:wrap;
+  background:#fff;border:1px solid var(--bd2);border-left:5px solid #94A3B8;box-shadow:0 1px 3px rgba(15,23,42,.08)}
+.tr.u-alta{border-left-color:var(--rojo)}
+.tr.u-media{border-left-color:#F59E0B}
+.tr.u-baja{border-left-color:#94A3B8}
+.tr:hover{background:var(--az0);box-shadow:0 3px 10px rgba(30,64,175,.15)}
+.tr+.tr,.tr+details,.empty+.tr{margin-top:8px}
+.tr.nuevo{background:#FFFBEB}
+.tr.done{background:#FAFAFA;box-shadow:none;border-left-color:#4ADE80}
 .tr-main{flex:1;min-width:0}
 .tr-tit{font-weight:600;color:var(--tx);overflow-wrap:anywhere}
 .tr.done .tr-tit{text-decoration:line-through;color:var(--mu)}
@@ -140,8 +146,6 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .kb-col.k-ejecucion{border-top:4px solid #94A3B8}
 .kb-col.k-validacion{border-top:4px solid #6366F1}
 .kb-col.k-terminada{border-top:4px solid var(--verde)}
-.kb-col .tr{background:#fff;border:1px solid var(--bd);margin-top:6px;flex-wrap:wrap}
-.kb-col .tr:hover{border-color:var(--az3)}
 .kb-col .hint{margin:-4px 4px 6px;font-size:12px}
 .secc{margin-bottom:22px}
 .secc>h2{font-size:15px;color:var(--tx2);display:flex;align-items:center;gap:8px;margin:0 0 10px 2px}
@@ -204,8 +208,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .pb-ed{border:1px solid var(--bd2);background:#fff;border-radius:8px;width:34px;height:32px;display:grid;place-items:center;color:var(--tx2);flex:none}
 .pb-ed:hover{border-color:var(--az5);color:var(--az7)}
 .pb-body{padding:6px 16px 14px 48px;background:var(--sf);border-left:3px solid var(--az2)}
-.pb-body .tr{background:#fff;border:1px solid var(--bd);margin-top:6px;flex-wrap:wrap}
-.pb-body .tr:hover{border-color:var(--az3)}
+.pb-body .tr:first-child{margin-top:8px}
 .pb-body .tr-tit{font-weight:500;font-size:13.5px}
 .pb-aviso{margin:8px 0 2px;padding:7px 10px;border-radius:8px;background:var(--verde1);color:var(--verde);font-size:13px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px}
@@ -221,7 +224,7 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .grp>h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mu);margin:0 0 6px 4px;display:flex;gap:8px;align-items:center}
 .grp.g-venc>h3{color:var(--rojo)}
 .grp.g-hoy>h3{color:var(--az6)}
-.lista{border:1px solid var(--bd);border-radius:12px;padding:6px;background:#fff}
+.lista{border:1px solid var(--bd);border-radius:12px;padding:8px;background:var(--sf)}
 
 /* CALENDARIO */
 .cal-nav{display:flex;align-items:center;gap:6px}
@@ -735,7 +738,7 @@ function fechasTxt(r){
 function filaTarea(t, o = {}){
   const p = !o.sinProyecto && proyVivo(t.proyecto_id) ? DB.proyectos[t.proyecto_id] : null;
   const nc = (t.comentarios || []).length;
-  return `<div class="tr ${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}" data-act="edit-t" data-id="${t.id}" ${o.drag ? `draggable="true" data-drag="${t.id}"` : ''}>
+  return `<div class="tr u-${t.urgencia || 'media'} ${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}" data-act="edit-t" data-id="${t.id}" ${o.drag ? `draggable="true" data-drag="${t.id}"` : ''}>
     <div class="tr-main">
       <div class="tr-tit">${esc(t.titulo)}</div>
       <div class="tr-sub">${p ? `<span class="ptag">${esc(p.titulo)}</span>` : ''}${chipUrg(t.urgencia)}${chipPlazo(t)}${chipResp(t)}
@@ -1049,7 +1052,7 @@ function vPersonas(){
   const us = UI.persona === 'jon' || UI.persona === 'andrea' ? [UI.persona] : ['jon', 'andrea'];
   const ts = tareas(), ps = proyectos();
   const sub = (titulo, l, vacioTxt, cls = '') => `<section class="card ${cls}"><h2>${titulo} <span class="n">${l.length}</span></h2>${l.map(t => filaTarea(t)).join('') || vacio(vacioTxt)}</section>`;
-  const filaProy = p => `<div class="tr" data-act="edit-p" data-id="${p.id}"><div class="tr-main"><div class="tr-tit">${esc(p.titulo)}</div>
+  const filaProy = p => `<div class="tr u-${p.urgencia || 'media'}" data-act="edit-p" data-id="${p.id}"><div class="tr-main"><div class="tr-tit">${esc(p.titulo)}</div>
     <div class="tr-sub">${chipUrg(p.urgencia)}${chipFase(p)}${chipPlazo(p)}${chipResp(p)}</div></div>${checks('proyectos', p)}</div>`;
   const bloque = u => {
     const o = u === 'jon' ? 'andrea' : 'jon';

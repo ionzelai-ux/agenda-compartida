@@ -186,20 +186,32 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .hoy-g .col{display:grid;gap:16px}
 
 /* PROYECTOS */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;align-items:start}
-.pc{border:1px solid var(--bd);border-top:4px solid var(--az5);border-radius:12px;padding:14px 14px 12px;background:#fff;box-shadow:var(--sh)}
-.pc.u-alta{border-top-color:var(--rojo)}.pc.u-media{border-top-color:#F59E0B}.pc.u-baja{border-top-color:#94A3B8}
-.pc.done{opacity:.75}
-.pc.nuevo{box-shadow:0 0 0 2px #FDE68A,var(--sh)}
-.pc-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.pc-h h3{font-size:16px;color:var(--az9)}
+.plist{display:grid;gap:10px}
+.pb{border:1px solid var(--bd);border-left:6px solid var(--az5);border-radius:12px;background:#fff;box-shadow:var(--sh);overflow:hidden}
+.pb.u-alta{border-left-color:var(--rojo)}.pb.u-media{border-left-color:#F59E0B}.pb.u-baja{border-left-color:#94A3B8}
+.pb.done{opacity:.8}
+.pb.nuevo{box-shadow:0 0 0 2px #FDE68A,var(--sh)}
+.pb-h{display:flex;align-items:center;gap:10px 16px;padding:13px 14px;cursor:pointer;flex-wrap:wrap}
+.pb-h:hover{background:var(--az0)}
+.pb.open .pb-h{background:linear-gradient(90deg,var(--az1),var(--az0) 60%,#fff);border-bottom:1px solid var(--az2)}
+.pb-chev{color:var(--az6);width:22px;height:22px;transition:transform .15s}
+.pb.open .pb-chev{transform:rotate(90deg)}
+.pb-tit{flex:1;min-width:260px}
+.pb-tit h3{font-size:17px;font-weight:700;color:var(--az9)}
+.pb-sub{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;margin-top:6px;font-size:12.5px;color:var(--mu)}
+.pb-prog{width:200px;flex:none}
+.pb-prog small{display:block;font-size:12px;color:var(--tx2);margin-top:5px}
+.pb-ed{border:1px solid var(--bd2);background:#fff;border-radius:8px;width:34px;height:32px;display:grid;place-items:center;color:var(--tx2);flex:none}
+.pb-ed:hover{border-color:var(--az5);color:var(--az7)}
+.pb-body{padding:6px 16px 14px 48px;background:var(--sf);border-left:3px solid var(--az2)}
+.pb-body .tr{background:#fff;border:1px solid var(--bd);margin-top:6px;flex-wrap:wrap}
+.pb-body .tr:hover{border-color:var(--az3)}
+.pb-body .tr-tit{font-weight:500;font-size:13.5px}
+.pb-aviso{margin:8px 0 2px;padding:7px 10px;border-radius:8px;background:var(--verde1);color:var(--verde);font-size:13px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px}
-.pc-f{font-size:12.5px;color:var(--mu);margin-bottom:8px}
 .prog{height:6px;border-radius:4px;background:var(--az1);overflow:hidden}
 .prog i{display:block;height:100%;background:var(--az6);border-radius:4px}
-.prog-t{font-size:12px;color:var(--mu);margin:4px 0 8px}
-.pc-l{margin:0 -6px}
-.pc-d{margin-top:6px}
+.pc-d{margin-top:8px}
 .pc-d summary{cursor:pointer;color:var(--mu);font-size:13px;padding:4px 4px}
 .quick-add{width:100%;margin-top:8px;border:1px dashed var(--bd2);border-radius:8px;padding:8px 10px;background:var(--sf)}
 .quick-add:focus{outline:none;border-style:solid;border-color:var(--az5);background:#fff}
@@ -380,7 +392,6 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media (max-width:1100px){.hoy-g{grid-template-columns:1fr}.kb{grid-template-columns:minmax(0,1fr)}}
-.pc .tr{flex-wrap:wrap}
 @media (max-width:900px){
   .cal-wrap{grid-template-columns:minmax(0,1fr)}
   .us{position:static;max-height:none;order:2}
@@ -392,7 +403,9 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
   .tools{margin-left:auto}
   main{padding:14px 12px 50px}
   .row2{grid-template-columns:1fr}
-  .pgrid{grid-template-columns:1fr}
+  .pb-prog{width:100%}
+  .pb-tit{min-width:0;flex-basis:calc(100% - 40px)}
+  .pb-body{padding:6px 10px 12px 14px}
   .tr{flex-wrap:wrap}
   .cal-nav h2{min-width:0;font-size:16px}
   .mc{min-height:80px}
@@ -791,34 +804,51 @@ function vProyectos(){
   if(q) sueltas = sueltas.filter(t => (t.titulo || '').toLowerCase().includes(q));
   const de = f => ps.filter(p => fase(p) === f);
   const term = de('terminada').sort(sortTerm);
+  const lista = l => `<div class="plist">${l.map(p => pcard(p, !!q)).join('')}</div>`;
   const seccion = (f, l, extra = '') => `<section class="secc"><h2>${FASES[f]} <span class="n">${l.length}</span></h2>
-    ${l.length || extra ? `<div class="pgrid">${l.map(pcard).join('')}${extra}</div>` : vacio(f === 'validacion' ? 'Ningún proyecto esperando validación.' : 'Ningún proyecto aquí.')}</section>`;
-  return `<div class="vh"><div><h1>Proyectos</h1><p>${proyectos().filter(p => !hecha(p)).length} abiertos · marca <b>Ejecución</b> y <b>Validación</b> para moverlos de sección</p></div><button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
-  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">${filtroResp()}</div>
-  ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas) : '') + seccion('validacion', de('validacion'))
-      + `<section class="secc"><details ${q ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? `<div class="pgrid">${term.map(pcard).join('')}</div>` : vacio('Todavía no hay proyectos terminados.')}</details></section>`
+    ${l.length || extra ? `<div class="plist">${l.map(p => pcard(p, !!q)).join('')}${extra}</div>` : vacio(f === 'validacion' ? 'Ningún proyecto esperando validación.' : 'Ningún proyecto aquí.')}</section>`;
+  return `<div class="vh"><div><h1>Proyectos</h1><p>${proyectos().filter(p => !hecha(p)).length} abiertos · pulsa un proyecto para ver sus tareas</p></div><button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
+  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">${filtroResp()}
+    <span class="grow"></span><button class="btn" data-act="p-todos" data-v="1">Desplegar todos</button><button class="btn" data-act="p-todos" data-v="0">Plegar todos</button></div>
+  ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas, !!q) : '') + seccion('validacion', de('validacion'))
+      + `<section class="secc"><details ${q ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? lista(term) : vacio('Todavía no hay proyectos terminados.')}</details></section>`
     : `<div class="empty">No hay proyectos todavía. Crea el primero con <b>+ Nuevo proyecto</b>.</div>`}`;
 }
-function pcard(p){
+const pAbierto = id => (UI.pAbiertos || []).includes(id);
+const CHEV = `<svg class="i pb-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`;
+// Cada proyecto es una caja cerrada; al pulsarla se despliegan sus tareas
+function pcard(p, forzarAbierto){
   const todas = tareasDe(p.id), ts = filtrarResp(todas);
   const pend = ts.filter(t => !hecha(t)).sort((a, b) => fase(a).localeCompare(fase(b)) || sortT(a, b)), hechas = ts.filter(hecha);
   const nh = todas.filter(hecha).length, pct = todas.length ? Math.round(nh / todas.length * 100) : 0;
-  return `<article class="pc u-${p.urgencia || 'media'} ${hecha(p) ? 'done' : ''} ${esNovedad(p) ? 'nuevo' : ''}">
-    <div class="pc-h"><h3><a data-act="edit-p" data-id="${p.id}">${esc(p.titulo)}</a></h3>${avCreador(p, 'o')}</div>
-    <div class="chips">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p)}${chipPlazo(p)}${chipAcept(p)}</div>
-    <div class="pc-f">${fechasTxt(p)}</div>
-    <div style="margin-bottom:8px">${checks('proyectos', p)}</div>
-    <div class="prog"><i style="width:${pct}%"></i></div><div class="prog-t">${nh} de ${todas.length} tareas terminadas${todas.length && nh === todas.length && !hecha(p) ? ' · <b>todas terminadas: ¿cerrar el proyecto?</b>' : ''}</div>
-    <div class="pc-l">${pend.map(t => filaTarea(t, {sinProyecto:1})).join('') || vacio('Sin tareas pendientes.')}</div>
-    ${hechas.length ? `<details class="pc-d"><summary>${hechas.length} terminada${hechas.length > 1 ? 's' : ''}</summary><div class="pc-l">${hechas.map(t => filaTarea(t, {sinProyecto:1})).join('')}</div></details>` : ''}
-    <input class="quick-add" data-proj="${p.id}" placeholder="+ Añadir tarea y pulsar Intro">
+  const venc = todas.filter(t => !ejec(t) && t.fecha_entrega && t.fecha_entrega < hoy()).length;
+  const abierto = forzarAbierto || pAbierto(p.id);
+  return `<article class="pb u-${p.urgencia || 'media'} ${abierto ? 'open' : ''} ${hecha(p) ? 'done' : ''} ${esNovedad(p) ? 'nuevo' : ''}">
+    <div class="pb-h" data-act="toggle-p" data-id="${p.id}" title="${abierto ? 'Plegar' : 'Ver tareas'}">
+      ${CHEV}
+      <div class="pb-tit"><h3>${esc(p.titulo)}</h3>
+        <div class="pb-sub">${chipUrg(p.urgencia)}${chipFase(p)}${chipResp(p)}${chipPlazo(p)}${chipAcept(p)}${p.fecha_inicio || p.fecha_revision || p.fecha_entrega ? `<span>${fechasTxt(p)}</span>` : ''}${avCreador(p, 'o')}</div></div>
+      <div class="pb-prog"><div class="prog"><i style="width:${pct}%"></i></div>
+        <small>${nh}/${todas.length} tareas terminadas${venc ? ` · <b style="color:var(--rojo)">${venc} vencida${venc > 1 ? 's' : ''}</b>` : ''}${pend.length ? ` · ${pend.length} pendiente${pend.length > 1 ? 's' : ''}` : ''}</small></div>
+      ${checks('proyectos', p)}
+      <button class="pb-ed" data-act="edit-p" data-id="${p.id}" title="Abrir ficha del proyecto"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+    </div>
+    ${abierto ? `<div class="pb-body">
+      ${todas.length && nh === todas.length && !hecha(p) ? '<div class="pb-aviso">Todas las tareas están terminadas: ¿cerrar el proyecto con sus checks?</div>' : ''}
+      ${pend.map(t => filaTarea(t, {sinProyecto:1})).join('') || vacio('Sin tareas pendientes.')}
+      ${hechas.length ? `<details class="pc-d"><summary>${hechas.length} terminada${hechas.length > 1 ? 's' : ''}</summary>${hechas.map(t => filaTarea(t, {sinProyecto:1})).join('')}</details>` : ''}
+      <input class="quick-add" data-proj="${p.id}" placeholder="+ Añadir tarea a este proyecto y pulsar Intro"></div>` : ''}
   </article>`;
 }
-function pcardSueltas(ts){
+function pcardSueltas(ts, forzarAbierto){
   ts.sort(sortT);
-  return `<article class="pc u-baja"><div class="pc-h"><h3>Tareas sueltas</h3></div><div class="pc-f">Tareas que no pertenecen a ningún proyecto.</div>
-    <div class="pc-l">${ts.map(t => filaTarea(t, {sinProyecto:1})).join('')}</div>
-    <input class="quick-add" data-proj="" placeholder="+ Añadir tarea suelta y pulsar Intro"></article>`;
+  const abierto = forzarAbierto || pAbierto('_sueltas');
+  return `<article class="pb u-baja ${abierto ? 'open' : ''}">
+    <div class="pb-h" data-act="toggle-p" data-id="_sueltas">${CHEV}
+      <div class="pb-tit"><h3>Tareas sueltas</h3><div class="pb-sub"><span>Tareas que no pertenecen a ningún proyecto</span></div></div>
+      <div class="pb-prog"><small>${ts.length} pendiente${ts.length > 1 ? 's' : ''}</small></div></div>
+    ${abierto ? `<div class="pb-body">${ts.map(t => filaTarea(t, {sinProyecto:1})).join('')}
+      <input class="quick-add" data-proj="" placeholder="+ Añadir tarea suelta y pulsar Intro"></div>` : ''}</article>`;
 }
 
 /* =========================================================
@@ -1397,6 +1427,12 @@ const ACC = {
     actualizar(k, id, {[f]: v === 'hoy' ? hoy() : addDays(r[f] || hoy(), 7)});
   },
   close: () => cerrarModal(),
+  'toggle-p': el => {
+    const id = el.dataset.id, l = (UI.pAbiertos || []).filter(x => x !== id);
+    if(!pAbierto(id)) l.push(id);
+    UI.pAbiertos = l; guardarUI(); render();
+  },
+  'p-todos': el => { UI.pAbiertos = el.dataset.v === '1' ? proyectos().map(p => p.id).concat('_sueltas') : []; guardarUI(); render(); },
   'ver-aceptar': () => abrirAceptar(),
   aceptar: el => { actualizar(el.dataset.k, el.dataset.id, {aceptado_por:ME, aceptado_en:nowISO()}); },
   'aceptar-todo': () => {

@@ -1264,7 +1264,10 @@ function metaTxt(r, gen){
   if(!r.creado_en) return '';
   let s = `Cread${gen} por <b>${nombre(r.creado_por)}</b> el ${fTs(r.creado_en)}`;
   if(r.aceptado_en) s += ` · Aceptad${gen} por <b>${nombre(r.aceptado_por)}</b> el ${fTs(r.aceptado_en)}`;
-  else if(r.creado_por && USERS[r.creado_por]) s += ` · <b style="color:var(--amb)">${r.creado_por === ME ? `${nombre(otro())} aún no l${gen} ha aceptado` : 'Pendiente de que l' + gen + ' aceptes'}</b>`;
+  else {
+    const quien = requiereAceptar(gen === 'o' ? 'proyectos' : 'tareas', r);
+    if(quien) s += ` · <b style="color:var(--amb)">${quien === ME ? 'Pendiente de que l' + gen + ' aceptes' : `${nombre(quien)} aún no l${gen} ha aceptado`}</b>`;
+  }
   if(r.actualizado_en && r.actualizado_en !== r.creado_en) s += ` · Último cambio: ${nombre(r.actualizado_por)}, ${fTs(r.actualizado_en)}`;
   return s;
 }
@@ -1455,21 +1458,31 @@ function render(){
    ACEPTAR LO NUEVO (acuse de recibo de lo que crea la otra persona)
    ========================================================= */
 const avisados = new Set();
+// Solo en un sentido: Jon acepta lo que crea Andrea (proyectos, y tareas en las que él ejecuta o valida).
+// Lo que crea Jon no le pide nada a Andrea.
+const ACEPTA = {jon:'andrea'};
+function requiereAceptar(k, r){
+  const quien = Object.keys(ACEPTA).find(u => ACEPTA[u] === r.creado_por);
+  if(!quien || r.borrado || r.aceptado_en) return '';
+  if(k === 'tareas' && !(r.responsable === quien || r.responsable === 'ambos' || r.validador === quien)) return '';
+  return quien;
+}
 function porAceptar(){
   if(!ME) return [];
   const out = [];
   ['proyectos', 'tareas'].forEach(k => Object.values(DB[k]).forEach(r => {
-    if(!r.borrado && USERS[r.creado_por] && r.creado_por !== ME && !r.aceptado_en) out.push({k, r});
+    if(requiereAceptar(k, r) === ME) out.push({k, r});
   }));
   // Agrupado por proyecto: primero el proyecto y luego sus tareas
   const clave = x => x.k === 'proyectos' ? x.r.id + '0' : (x.r.proyecto_id || 'zz') + '1';
   return out.sort((a, b) => clave(a).localeCompare(clave(b)) || (a.r.creado_en || '').localeCompare(b.r.creado_en || ''));
 }
 function chipAcept(r){
-  if(!ME || !USERS[r.creado_por] || r.aceptado_en) return '';
-  return r.creado_por === ME
-    ? `<span class="acp-pend" title="Todavía no lo ha aceptado">⏳ Sin aceptar por ${nombre(otro())}</span>`
-    : `<span class="acp-new">Nueva · sin aceptar</span>`;
+  const quien = ME && requiereAceptar(DB.proyectos[r.id] ? 'proyectos' : 'tareas', r);
+  if(!quien) return '';
+  return quien === ME
+    ? `<span class="acp-new">Nueva · sin aceptar</span>`
+    : `<span class="acp-pend" title="Todavía no lo ha aceptado">⏳ Sin aceptar por ${nombre(quien)}</span>`;
 }
 function renderAviso(){
   const l = porAceptar(), el = $('#aviso');

@@ -21,6 +21,8 @@ de Drive a través de Apps Script (`apps-script/Code.gs`).
   El cumplimiento de plazo se mide con la fecha de ejecución frente a la de entrega.
 - **Fechas**: cuándo empezar (con hora y tiempo previsto), fecha de entrega (con hora opcional) y fecha de revisión.
   Cada fecha tiene botones **Hoy** y **Mañana** para no tener que abrir el calendario.
+- **Tareas recurrentes** (campo «Repetir»): cada semana, cada mes un día fijo, el N.º día hábil o el último día
+  hábil (lunes a viernes sin festivos nacionales). Al marcar la ejecución se crea sola la del periodo siguiente.
 - **Hoy**: la agenda del día por franjas horarias, lo vencido, lo que hay que entregar hoy, lo que toca empezar y lo de los próximos 7 días.
 - **Calendario**: vista de día, semana y mes. En día y semana hay franjas de 30 minutos (07:00–21:00).
   Clic en un hueco = nueva tarea a esa hora. Las tareas se arrastran para cambiarlas de hora o de día.

@@ -177,6 +177,12 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .acp-new{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:#F59E0B;color:#fff}
 .acp-pend{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;background:#FFFBEB;color:var(--amb);border:1px solid #FCD34D}
 
+/* tareas recurrentes */
+.recf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.recf select{border:1px solid var(--bd2);border-radius:8px;padding:6px 8px;background:#fff}
+.recf select[hidden]{display:none}
+.recu{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;white-space:nowrap}
+
 /* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;background:linear-gradient(180deg,#fff,var(--az0));box-shadow:var(--sh)}
@@ -589,6 +595,12 @@ function guardarRec(k, r, prev){
   });
   r.estado = hecha(r) ? 'hecha' : r.ejecutada ? 'revision' : 'pendiente';
   r.completada_en = hecha(r) ? r.validada_en : '';
+  // Tarea recurrente: al ejecutarla se crea la del periodo siguiente (una sola vez)
+  let siguiente = null;
+  if(k === 'tareas' && r.recurrencia && r.ejecutada && !(prev && prev.ejecutada) && !r.rec_siguiente && !r.borrado){
+    siguiente = instanciaSiguiente(r);
+    if(siguiente) r.rec_siguiente = siguiente.id;
+  }
   r.actualizado_en = nowISO();
   r.actualizado_por = ME;
   DB[k][r.id] = r;
@@ -596,8 +608,108 @@ function guardarRec(k, r, prev){
   persist();
   schedulePush();
   renderSoon();
+  if(siguiente) crear('tareas', siguiente);
   return r;
 }
+
+/* =========================================================
+   TAREAS RECURRENTES
+   recurrencia = 'semanal:1' (1 = lunes) · 'mensual_dia:15' · 'mensual_habil:2' · 'mensual_ult_habil'
+   Días hábiles: lunes a viernes sin festivos nacionales.
+   ========================================================= */
+const FEST_FIJOS = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-06', '12-08', '12-25'];
+function viernesSanto(y){
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25),
+    g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), kk = c % 4,
+    l = (32 + 2 * e + 2 * i - h - kk) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+    mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return iso(new Date(y, mes - 1, dia - 2));
+}
+const esFestivo = s => FEST_FIJOS.includes(s.slice(5)) || viernesSanto(+s.slice(0, 4)) === s;
+const esHabil = s => { const d = parseISO(s).getDay(); return d >= 1 && d <= 5 && !esFestivo(s); };
+// Fecha de la recurrencia dentro de un mes concreto (y, m con m de 0 a 11)
+function recEnMes(tipo, n, y, m){
+  const ult = new Date(y, m + 1, 0).getDate(), dia = d => iso(new Date(y, m, d));
+  if(tipo === 'mensual_dia') return dia(Math.min(n, ult));
+  if(tipo === 'mensual_ult_habil'){ for(let d = ult; d >= 1; d--) if(esHabil(dia(d))) return dia(d); }
+  if(tipo === 'mensual_habil'){
+    let c = 0, ultimo = '';
+    for(let d = 1; d <= ult; d++) if(esHabil(dia(d))){ c++; ultimo = dia(d); if(c === n) return ultimo; }
+    return ultimo;
+  }
+  return '';
+}
+// Primera fecha de la serie estrictamente posterior a «despues»
+function recSiguiente(rec, despues){
+  const [tipo, nTxt] = String(rec || '').split(':'), n = Number(nTxt) || 1;
+  if(tipo === 'semanal'){
+    let s = addDays(despues, 1);
+    for(let i = 0; i < 7; i++, s = addDays(s, 1)) if(parseISO(s).getDay() === n % 7) return s;
+    return '';
+  }
+  const D = parseISO(despues);
+  for(let i = 0; i < 14; i++){
+    const f = recEnMes(tipo, n, D.getFullYear(), D.getMonth() + i);
+    if(f && f > despues) return f;
+  }
+  return '';
+}
+const recPrimera = (rec, desde) => recSiguiente(rec, addDays(desde, -1));
+const DIAS_SEM = {1:'lunes', 2:'martes', 3:'miércoles', 4:'jueves', 5:'viernes'};
+function textoRec(rec){
+  const [tipo, nTxt] = String(rec || '').split(':'), n = Number(nTxt) || 1;
+  if(tipo === 'semanal') return `Cada semana, los ${DIAS_SEM[n] || ''}`;
+  if(tipo === 'mensual_dia') return `Cada mes, el día ${n}`;
+  if(tipo === 'mensual_habil') return `Cada mes, el ${n}.º día hábil`;
+  if(tipo === 'mensual_ult_habil') return 'Cada mes, el último día hábil';
+  return '';
+}
+function instanciaSiguiente(r){
+  const f = recSiguiente(r.recurrencia, r.fecha_entrega || hoy());
+  if(!f) return null;
+  const desfase = r.fecha_inicio && r.fecha_entrega ? diffDays(r.fecha_inicio, r.fecha_entrega) : null;
+  return {id:uid('t'), proyecto_id:r.proyecto_id || '', titulo:r.titulo, descripcion:r.descripcion || '', urgencia:r.urgencia,
+    responsable:r.responsable, validador:r.validador || '', duracion:r.duracion, hora_inicio:r.hora_inicio || '', hora_entrega:r.hora_entrega || '',
+    recurrencia:r.recurrencia, fecha_entrega:f, fecha_inicio:desfase != null ? addDays(f, desfase) : '',
+    creado_por:r.creado_por || ME, creado_en:nowISO(), aceptado_por:r.aceptado_por || '', aceptado_en:r.aceptado_en || ''};
+}
+function opcionesRecN(tipo, n){
+  if(tipo === 'semanal') return Object.entries(DIAS_SEM).map(([v, l]) => `<option value="${v}" ${+v === n ? 'selected' : ''}>los ${l}</option>`).join('');
+  if(tipo === 'mensual_dia') return Array.from({length:31}, (_, i) => `<option value="${i + 1}" ${i + 1 === n ? 'selected' : ''}>el día ${i + 1}</option>`).join('');
+  if(tipo === 'mensual_habil') return Array.from({length:10}, (_, i) => `<option value="${i + 1}" ${i + 1 === n ? 'selected' : ''}>el ${i + 1}.º día hábil</option>`).join('');
+  return '';
+}
+function textoRecForm(rec){
+  return rec ? `Siguiente según la regla: <b>${fCorta(recPrimera(rec, hoy()))}</b>. Al marcar la ejecución se crea sola la del periodo siguiente.` : '';
+}
+function campoRec(rec){
+  const [tipo = '', nTxt] = String(rec || '').split(':'), n = Number(nTxt) || 1;
+  const op = (v, l) => `<option value="${v}" ${v === tipo ? 'selected' : ''}>${l}</option>`;
+  return `<div class="fila"><div class="fl"><span>Repetir</span><div class="recf">
+    <select name="rec_tipo">${op('', 'No se repite')}${op('semanal', 'Cada semana')}${op('mensual_dia', 'Cada mes, día fijo')}${op('mensual_habil', 'Cada mes, N.º día hábil')}${op('mensual_ult_habil', 'Cada mes, último día hábil')}</select>
+    <select name="rec_n" data-tipo="${tipo}" ${tipo && tipo !== 'mensual_ult_habil' ? '' : 'hidden'}>${opcionesRecN(tipo, n)}</select>
+    <span id="rec-txt" class="hint">${textoRecForm(rec)}</span></div></div></div>`;
+}
+// Al cambiar la regla: ajusta el segundo desplegable, el texto y propone la fecha de entrega si está vacía
+function recForm(f){
+  const tipo = f.elements.rec_tipo.value, sel = f.elements.rec_n;
+  if(sel.dataset.tipo !== tipo){ sel.innerHTML = opcionesRecN(tipo, 1); sel.dataset.tipo = tipo; }
+  sel.hidden = !tipo || tipo === 'mensual_ult_habil';
+  const rec = tipo ? tipo + (tipo === 'mensual_ult_habil' ? '' : ':' + sel.value) : '';
+  $('#rec-txt').innerHTML = textoRecForm(rec);
+  // Propone la fecha si está vacía o si la había propuesto la propia regla
+  const ent = f.elements.fecha_entrega;
+  if(rec && (!ent.value || ent.value === ent.dataset.auto)){
+    ent.value = ent.dataset.auto = recPrimera(rec, hoy());
+    syncDq(ent.closest('.dq'));
+  }
+}
+function textoRecCorto(rec){
+  const [tipo, nTxt] = String(rec || '').split(':'), n = Number(nTxt) || 1;
+  return {semanal:`Semanal · ${DIAS_SEM[n] || ''}`, mensual_dia:`Mensual · día ${n}`, mensual_habil:`Mensual · ${n}.º día hábil`,
+    mensual_ult_habil:'Mensual · último día hábil'}[tipo] || '';
+}
+const chipRec = t => t.recurrencia ? `<span class="recu" title="Tarea recurrente: ${esc(textoRec(t.recurrencia))}">🔁 ${esc(textoRecCorto(t.recurrencia))}</span>` : '';
 
 /* =========================================================
    SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script)
@@ -744,7 +856,7 @@ function filaTarea(t, o = {}){
       <div class="tr-sub">${p ? `<span class="ptag">${esc(p.titulo)}</span>` : ''}${chipUrg(t.urgencia)}${chipPlazo(t)}${chipResp(t)}
         ${t.fecha_inicio ? `<span>Empieza ${fCorta(t.fecha_inicio)}${t.hora_inicio ? ' ' + t.hora_inicio : ''}</span>` : ''}
         ${t.fecha_entrega ? `<span>Entrega ${fCorta(t.fecha_entrega)}${t.hora_entrega ? ' ' + t.hora_entrega : ''}</span>` : ''}
-        ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}
+        ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}${chipRec(t)}
         ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${avCreador(t)}${chipAcept(t)}</div>
     </div>
     ${checks('tareas', t)}
@@ -1193,6 +1305,7 @@ function formTarea(id, preset = {}){
       <div class="fila">${campoFecha('fecha_entrega', 'Fecha de entrega', t.fecha_entrega)}
         <label class="fl">Hora (opcional)<input type="time" name="hora_entrega" step="900" value="${t.hora_entrega || ''}"></label></div>
       <div class="fila">${campoFecha('fecha_revision', 'Fecha de revisión', t.fecha_revision)}</div>
+      ${campoRec(t.recurrencia)}
     </div>
     <label class="fl">Notas<textarea name="descripcion" placeholder="Detalles, enlaces, qué se espera…">${esc(t.descripcion)}</textarea></label>
     ${id ? comentariosHTML('tareas', t) + historialHTML(t) : ''}
@@ -1227,6 +1340,9 @@ function guardarFormTarea(){
   if(!o.titulo){ f.titulo.classList.add('err'); f.titulo.focus(); return; }
   if(faltaEjecutor(f, o)) return;
   o.duracion = Number(o.duracion) || 60;
+  o.recurrencia = o.rec_tipo ? o.rec_tipo + (o.rec_tipo === 'mensual_ult_habil' ? '' : ':' + o.rec_n) : '';
+  delete o.rec_tipo; delete o.rec_n;
+  if(o.recurrencia && !o.fecha_entrega) o.fecha_entrega = recPrimera(o.recurrencia, hoy());
   const id = f.dataset.id;
   if(id) actualizar('tareas', id, o); else { crear('tareas', o); lsSet('ultResp', o.responsable); lsSet('ultVal', o.validador); }
   cerrarModal();
@@ -1412,6 +1528,10 @@ const ACC = {
     const {k, id, f} = el.dataset, r = DB[k][id];
     if(!r) return;
     const r2 = actualizar(k, id, {[f]: !r[f]});
+    if(r2.rec_siguiente && !r.rec_siguiente && DB.tareas[r2.rec_siguiente]){
+      toast('Hecha · creada la siguiente para el ' + fCorta(DB.tareas[r2.rec_siguiente].fecha_entrega));
+      return;
+    }
     toast(r2[f] ? (hecha(r2) ? '¡Terminada! Pasa a Terminados' : 'Ejecutada · pendiente de validación') : (f === 'ejecutada' ? 'Vuelve a pendiente de ejecución' : 'Vuelve a pendiente de validación'));
   },
   'new-at': el => formTarea(null, {fecha_inicio:el.dataset.date, hora_inicio:el.dataset.time || ''}),
@@ -1515,6 +1635,7 @@ document.addEventListener('input', e => {
   const el = e.target;
   if(el.closest('.dq')) syncDq(el.closest('.dq'));
   if(el.form && (el.name === 'ejecutada' || el.name === 'validada')) syncChecksForm(el);
+  if(el.form && (el.name === 'rec_tipo' || el.name === 'rec_n')) recForm(el.form);
   if(el.dataset.ui === 'q'){ UI.q = el.value; render(); }
   if(el.classList.contains('err')) el.classList.remove('err');
 });

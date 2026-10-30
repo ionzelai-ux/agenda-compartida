@@ -177,6 +177,11 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .acp-new{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:#F59E0B;color:#fff}
 .acp-pend{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;background:#FFFBEB;color:var(--amb);border:1px solid #FCD34D}
 
+/* fecha de creación */
+.creada{font-size:12px;color:var(--mu);white-space:nowrap}
+.creada::before{content:"✚ ";font-size:10px}
+.creada.hoy{color:var(--az7);font-weight:700}
+
 /* tareas recurrentes */
 .recf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .recf select{border:1px solid var(--bd2);border-radius:8px;padding:6px 8px;background:#fff}
@@ -857,7 +862,7 @@ function filaTarea(t, o = {}){
         ${t.fecha_inicio ? `<span>Empieza ${fCorta(t.fecha_inicio)}${t.hora_inicio ? ' ' + t.hora_inicio : ''}</span>` : ''}
         ${t.fecha_entrega ? `<span>Entrega ${fCorta(t.fecha_entrega)}${t.hora_entrega ? ' ' + t.hora_entrega : ''}</span>` : ''}
         ${fase(t) === 'validacion' && t.fecha_revision ? `<span><b>Revisión ${fCorta(t.fecha_revision)}</b></span>` : ''}${chipRec(t)}
-        ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${avCreador(t)}${chipAcept(t)}</div>
+        ${nc ? `<span title="Comentarios">💬 ${nc}</span>` : ''}${chipCreada(t)}${avCreador(t)}${chipAcept(t)}</div>
     </div>
     ${checks('tareas', t)}
   </div>`;
@@ -910,30 +915,47 @@ const sortTerm = (a, b) => (b.completada_en || '').localeCompare(a.completada_en
 /* =========================================================
    VISTA: PROYECTOS
    ========================================================= */
+// Fecha de creación (día local) y filtro «Creadas»: cualquier día, hoy o últimos 7 días
+const diaCreacion = r => r.creado_en ? iso(new Date(r.creado_en)) : '';
+function coincideCreada(r){
+  const c = UI.creada || 'todas', d = diaCreacion(r);
+  if(c === 'todas') return true;
+  if(!d) return false;
+  return c === 'hoy' ? d === hoy() : d >= addDays(hoy(), -6);
+}
+const filtroCreada = () => segUI('creada', {todas:'Creadas: cualquier día', hoy:'Creadas hoy', semana:'Últimos 7 días'}, UI.creada || 'todas');
+function chipCreada(r){
+  const d = diaCreacion(r);
+  if(!d) return '';
+  const df = diffDays(hoy(), d), txt = df === 0 ? 'hoy' : df === 1 ? 'ayer' : fCorta(d);
+  return `<span class="creada ${df === 0 ? 'hoy' : ''}" title="Creada por ${esc(nombre(r.creado_por))} el ${fTs(r.creado_en)}">Creada ${txt}</span>`;
+}
 function vProyectos(){
-  const q = (UI.q || '').toLowerCase().trim();
-  let ps = proyectos().filter(p => coincideResp(p) || tareasDe(p.id).some(coincideResp));
+  const q = (UI.q || '').toLowerCase().trim(), porCreada = (UI.creada || 'todas') !== 'todas', abrir = !!q || porCreada;
+  const tareaVale = t => coincideResp(t) && coincideCreada(t);
+  let ps = proyectos().filter(p => (coincideResp(p) && coincideCreada(p)) || tareasDe(p.id).some(tareaVale));
   if(q) ps = ps.filter(p => (p.titulo || '').toLowerCase().includes(q) || tareasDe(p.id).some(t => (t.titulo || '').toLowerCase().includes(q)));
   ps.sort(sortP);
-  let sueltas = filtrarResp(tareas()).filter(t => !proyVivo(t.proyecto_id) && !hecha(t));
+  let sueltas = tareas().filter(t => !proyVivo(t.proyecto_id) && !hecha(t) && tareaVale(t));
   if(q) sueltas = sueltas.filter(t => (t.titulo || '').toLowerCase().includes(q));
   const de = f => ps.filter(p => fase(p) === f);
   const term = de('terminada').sort(sortTerm);
-  const lista = l => `<div class="plist">${l.map(p => pcard(p, !!q)).join('')}</div>`;
+  const lista = l => `<div class="plist">${l.map(p => pcard(p, abrir)).join('')}</div>`;
   const seccion = (f, l, extra = '') => `<section class="secc"><h2>${FASES[f]} <span class="n">${l.length}</span></h2>
-    ${l.length || extra ? `<div class="plist">${l.map(p => pcard(p, !!q)).join('')}${extra}</div>` : vacio(f === 'validacion' ? 'Ningún proyecto esperando validación.' : 'Ningún proyecto aquí.')}</section>`;
+    ${l.length || extra ? `<div class="plist">${l.map(p => pcard(p, abrir)).join('')}${extra}</div>` : vacio(f === 'validacion' ? 'Ningún proyecto esperando validación.' : 'Ningún proyecto aquí.')}</section>`;
   return `<div class="vh"><div><h1>Proyectos</h1><p>${proyectos().filter(p => !hecha(p)).length} abiertos · pulsa un proyecto para ver sus tareas</p></div><button class="btn pri" data-act="new-p">+ Nuevo proyecto</button></div>
-  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">${filtroResp()}
+  <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar proyecto o tarea…" value="${esc(UI.q)}" style="min-width:240px">${filtroResp()}${filtroCreada()}
     <span class="grow"></span><button class="btn" data-act="p-todos" data-v="1">Desplegar todos</button><button class="btn" data-act="p-todos" data-v="0">Plegar todos</button></div>
-  ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas, !!q) : '') + seccion('validacion', de('validacion'))
-      + `<section class="secc"><details ${q ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? lista(term) : vacio('Todavía no hay proyectos terminados.')}</details></section>`
+  ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas, abrir) : '') + seccion('validacion', de('validacion'))
+      + `<section class="secc"><details ${abrir ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? lista(term) : vacio('Todavía no hay proyectos terminados.')}</details></section>`
+    : porCreada ? `<div class="empty">No hay nada creado ${UI.creada === 'hoy' ? 'hoy' : 'en los últimos 7 días'}.</div>`
     : `<div class="empty">No hay proyectos todavía. Crea el primero con <b>+ Nuevo proyecto</b>.</div>`}`;
 }
 const pAbierto = id => (UI.pAbiertos || []).includes(id);
 const CHEV = `<svg class="i pb-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`;
 // Cada proyecto es una caja cerrada; al pulsarla se despliegan sus tareas
 function pcard(p, forzarAbierto){
-  const todas = tareasDe(p.id), ts = filtrarResp(todas);
+  const todas = tareasDe(p.id), ts = filtrarResp(todas).filter(coincideCreada);
   const pend = ts.filter(t => !hecha(t)).sort((a, b) => fase(a).localeCompare(fase(b)) || sortT(a, b)), hechas = ts.filter(hecha);
   const nh = todas.filter(hecha).length, pct = todas.length ? Math.round(nh / todas.length * 100) : 0;
   const venc = todas.filter(t => !ejec(t) && t.fecha_entrega && t.fecha_entrega < hoy()).length;
@@ -973,6 +995,7 @@ function vTareas(){
   const q = (UI.q || '').toLowerCase().trim();
   let ts = filtrarResp(tareas());
   if(UI.turg !== 'todas') ts = ts.filter(t => (t.urgencia || 'media') === UI.turg);
+  ts = ts.filter(coincideCreada);
   if(UI.tproj === '_') ts = ts.filter(t => !proyVivo(t.proyecto_id));
   else if(UI.tproj) ts = ts.filter(t => t.proyecto_id === UI.tproj);
   if(q) ts = ts.filter(t => (t.titulo || '').toLowerCase().includes(q) || (t.descripcion || '').toLowerCase().includes(q));
@@ -992,6 +1015,7 @@ function vTareas(){
   return `<div class="vh"><div><h1>Tareas</h1><p>${tareas().filter(t => !ejec(t)).length} pendientes de ejecución · ${tareas().filter(t => fase(t) === 'validacion').length} pendientes de validación · arrastra una tarea para cambiarla de columna</p></div><button class="btn pri" data-act="new-t">+ Nueva tarea</button></div>
   <div class="bar"><input class="inp" data-ui="q" placeholder="Buscar tarea…" value="${esc(UI.q)}" style="min-width:220px">
     ${segUI('turg', {todas:'Toda urgencia', alta:'Urgente', media:'Media', baja:'Baja'}, UI.turg)}
+    ${filtroCreada()}
     <select class="sel" data-ui="tproj"><option value="">Todos los proyectos</option><option value="_" ${UI.tproj === '_' ? 'selected' : ''}>Tareas sueltas</option>${projOpts}</select>
     ${filtroResp()}</div>${cuerpo}`;
 }
@@ -1213,7 +1237,7 @@ function rvFila(t){
   return `<tr class="${hecha(t) ? 'done' : ''} ${esNovedad(t) ? 'nuevo' : ''}">
     <td>${checks('tareas', t)}</td>
     <td class="rv-tit"><a data-act="edit-t" data-id="${t.id}">${esc(t.titulo)}</a>
-      <div class="tr-sub">${avCreador(t)}${chipFase(t)}${nc ? `<span>💬 ${nc}</span>` : ''}${chipAcept(t)}</div></td>
+      <div class="tr-sub">${avCreador(t)}${chipFase(t)}${chipCreada(t)}${nc ? `<span>💬 ${nc}</span>` : ''}${chipAcept(t)}</div></td>
     <td>${selInline('tareas', t, 'responsable', RESP)}</td>
     <td>${selInline('tareas', t, 'validador', VALID_C)}</td>
     <td>${selInline('tareas', t, 'urgencia', URG)}</td>

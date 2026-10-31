@@ -181,6 +181,29 @@ main{max-width:1440px;margin:0 auto;padding:20px 20px 60px}
 .creada{font-size:12px;color:var(--mu);white-space:nowrap}
 .creada::before{content:"✚ ";font-size:10px}
 .creada.hoy{color:var(--az7);font-weight:700}
+.cf-wrap{position:relative;display:inline-flex;align-items:center;gap:4px}
+.cf-btn.on{background:var(--az6);color:#fff;border-color:var(--az6)}
+.cf-x{border:0;background:none;color:var(--mu);font-size:14px;padding:4px 6px;cursor:pointer}
+.cf-x:hover{color:var(--rojo)}
+.cf-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:40;background:#fff;border:1px solid var(--bd2);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.15);padding:12px;width:300px;max-width:calc(100vw - 32px)}
+.cf-rap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cf-q{border:1px solid var(--bd2);background:#fff;border-radius:999px;padding:4px 10px;font-weight:600;font-size:13px;color:var(--tx2);cursor:pointer}
+.cf-q:hover{background:var(--az0)}
+.cf-q.on{background:var(--az6);border-color:var(--az6);color:#fff}
+.cf-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cf-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cf-g>span{font-size:11px;font-weight:700;color:var(--mu);padding:2px 0}
+.cf-d{position:relative;border:1px solid transparent;background:none;border-radius:8px;height:36px;font-size:13px;cursor:pointer;color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.cf-d small{font-size:10px;font-weight:700;color:var(--az6)}
+.cf-d.con{background:var(--az0)}
+.cf-d:hover{border-color:var(--az5)}
+.cf-d.fuera{color:#b6bcc8}
+.cf-d.fut{color:#c3c8d2}
+.cf-d.hoy{border-color:var(--az6);font-weight:700}
+.cf-d.sel{background:var(--az6);color:#fff;border-color:var(--az6)}
+.cf-d.sel small{color:#fff}
+.cf-ay{font-size:11px;color:var(--mu);margin:8px 0 6px}
+.cf-pie{display:flex;justify-content:space-between;align-items:center}
 
 /* tareas recurrentes */
 .recf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -491,7 +514,7 @@ let DB = lsGet('db', {proyectos:{}, tareas:{}});
 let DIRTY = lsGet('dirty', {proyectos:{}, tareas:{}});
 let UI = Object.assign({vista:'hoy', resp:'todos', cal:'semana', calFecha:'', finde:false, q:'',
   turg:'todas', tproj:'', rvAtencion:false, verTerm:false, persona:'todas'}, lsGet('ui', {}));
-UI.q = '';
+UI.q = ''; UI.creadaPop = false; delete UI.creada;
 function persist(){ lsSet('db', DB); lsSet('dirty', DIRTY); }
 function guardarUI(){ lsSet('ui', UI); }
 Object.values(DB.proyectos).concat(Object.values(DB.tareas)).forEach(normRec);
@@ -915,15 +938,45 @@ const sortTerm = (a, b) => (b.completada_en || '').localeCompare(a.completada_en
 /* =========================================================
    VISTA: PROYECTOS
    ========================================================= */
-// Fecha de creación (día local) y filtro «Creadas»: cualquier día, hoy o últimos 7 días
+// Fecha de creación (día local) y filtro «Creadas»: calendario para elegir uno o varios días
 const diaCreacion = r => r.creado_en ? iso(new Date(r.creado_en)) : '';
+const diasCreada = () => Array.isArray(UI.creadaDias) ? UI.creadaDias : [];
 function coincideCreada(r){
-  const c = UI.creada || 'todas', d = diaCreacion(r);
-  if(c === 'todas') return true;
-  if(!d) return false;
-  return c === 'hoy' ? d === hoy() : d >= addDays(hoy(), -6);
+  const ds = diasCreada();
+  return !ds.length || ds.includes(diaCreacion(r));
 }
-const filtroCreada = () => segUI('creada', {todas:'Creadas: cualquier día', hoy:'Creadas hoy', semana:'Últimos 7 días'}, UI.creada || 'todas');
+function txtDiaRel(d){
+  const df = diffDays(hoy(), d);
+  return df === 0 ? 'hoy' : df === 1 ? 'ayer' : df === 2 ? 'antes de ayer' : fCorta(d);
+}
+function filtroCreada(){
+  const ds = diasCreada(), on = ds.length > 0;
+  const lbl = !on ? 'Creadas: cualquier día' : ds.length === 1 ? 'Creadas ' + txtDiaRel(ds[0]) : `Creadas: ${ds.length} días`;
+  return `<div class="cf-wrap"><button class="btn cf-btn ${on ? 'on' : ''}" data-act="cf-pop">📅 ${lbl} ▾</button>
+    ${on ? `<button class="cf-x" data-act="cf-set" data-v="" title="Quitar filtro">✕</button>` : ''}${UI.creadaPop ? popCreada() : ''}</div>`;
+}
+function popCreada(){
+  const ds = diasCreada(), h = hoy();
+  const n = {};
+  tareas().concat(proyectos()).forEach(r => { const d = diaCreacion(r); if(d) n[d] = (n[d] || 0) + 1; });
+  const M = parseISO((UI.creadaMes || h.slice(0, 7)) + '-01'), y = M.getFullYear(), m = M.getMonth();
+  const ini = lunes(iso(M)), fin = iso(new Date(y, m + 1, 0));
+  let celdas = '';
+  for(let d = ini; d <= fin || parseISO(d).getDay() !== 1; d = addDays(d, 1)){
+    const fuera = parseISO(d).getMonth() !== m, c = n[d] || 0;
+    celdas += `<button class="cf-d ${fuera ? 'fuera' : ''} ${d === h ? 'hoy' : ''} ${ds.includes(d) ? 'sel' : ''} ${c ? 'con' : ''} ${d > h ? 'fut' : ''}"
+      data-act="cf-dia" data-v="${d}" title="${c ? c + ' creada' + (c > 1 ? 's' : '') : 'Nada creado'}">${parseISO(d).getDate()}${c ? `<small>${c}</small>` : ''}</button>`;
+  }
+  const rapido = (txt, dias) => `<button class="cf-q ${dias.length === ds.length && dias.every(d => ds.includes(d)) ? 'on' : ''}" data-act="cf-set" data-v="${dias.join(',')}">${txt}</button>`;
+  const ult = k => Array.from({length:k}, (_, i) => addDays(h, -i));
+  return `<div class="cf-pop">
+    <div class="cf-rap">${rapido('Hoy', [h])}${rapido('Ayer', [addDays(h, -1)])}${rapido('Antes de ayer', [addDays(h, -2)])}${rapido('Últimos 7 días', ult(7))}</div>
+    <div class="cf-nav"><button class="ibtn" data-act="cf-mes" data-d="-1">‹</button><b>${MESES[m].replace(/^./, c => c.toUpperCase())} ${y}</b><button class="ibtn" data-act="cf-mes" data-d="1">›</button></div>
+    <div class="cf-g">${['L','M','X','J','V','S','D'].map(x => `<span>${x}</span>`).join('')}${celdas}</div>
+    <p class="cf-ay">Clic para marcar o desmarcar días · Mayús+clic para un rango. El número es lo creado ese día.</p>
+    <div class="cf-pie"><button class="lnk" data-act="cf-set" data-v="">Cualquier día</button><button class="btn pri" data-act="cf-cerrar">Listo</button></div>
+  </div>`;
+}
 function chipCreada(r){
   const d = diaCreacion(r);
   if(!d) return '';
@@ -931,7 +984,7 @@ function chipCreada(r){
   return `<span class="creada ${df === 0 ? 'hoy' : ''}" title="Creada por ${esc(nombre(r.creado_por))} el ${fTs(r.creado_en)}">Creada ${txt}</span>`;
 }
 function vProyectos(){
-  const q = (UI.q || '').toLowerCase().trim(), porCreada = (UI.creada || 'todas') !== 'todas', abrir = !!q || porCreada;
+  const q = (UI.q || '').toLowerCase().trim(), porCreada = diasCreada().length > 0, abrir = !!q || porCreada;
   const tareaVale = t => coincideResp(t) && coincideCreada(t);
   let ps = proyectos().filter(p => (coincideResp(p) && coincideCreada(p)) || tareasDe(p.id).some(tareaVale));
   if(q) ps = ps.filter(p => (p.titulo || '').toLowerCase().includes(q) || tareasDe(p.id).some(t => (t.titulo || '').toLowerCase().includes(q)));
@@ -948,7 +1001,7 @@ function vProyectos(){
     <span class="grow"></span><button class="btn" data-act="p-todos" data-v="1">Desplegar todos</button><button class="btn" data-act="p-todos" data-v="0">Plegar todos</button></div>
   ${ps.length || sueltas.length ? seccion('ejecucion', de('ejecucion'), sueltas.length ? pcardSueltas(sueltas, abrir) : '') + seccion('validacion', de('validacion'))
       + `<section class="secc"><details ${abrir ? 'open' : ''}><summary>${FASES.terminada} (${term.length})</summary>${term.length ? lista(term) : vacio('Todavía no hay proyectos terminados.')}</details></section>`
-    : porCreada ? `<div class="empty">No hay nada creado ${UI.creada === 'hoy' ? 'hoy' : 'en los últimos 7 días'}.</div>`
+    : porCreada ? `<div class="empty">No hay nada creado ${diasCreada().length === 1 ? txtDiaRel(diasCreada()[0]) : 'en los días elegidos'}.</div>`
     : `<div class="empty">No hay proyectos todavía. Crea el primero con <b>+ Nuevo proyecto</b>.</div>`}`;
 }
 const pAbierto = id => (UI.pAbiertos || []).includes(id);
@@ -1592,6 +1645,19 @@ const ACC = {
     if(!pAbierto(id)) l.push(id);
     UI.pAbiertos = l; guardarUI(); render();
   },
+  'cf-pop': () => { UI.creadaPop = !UI.creadaPop; if(UI.creadaPop) UI.creadaMes = (diasCreada().slice().sort().pop() || hoy()).slice(0, 7); render(); },
+  'cf-cerrar': () => { UI.creadaPop = false; render(); },
+  'cf-set': el => { UI.creadaDias = el.dataset.v ? el.dataset.v.split(',') : []; UI.cfUlt = ''; guardarUI(); render(); },
+  'cf-mes': el => { const M = parseISO((UI.creadaMes || hoy().slice(0, 7)) + '-01'); UI.creadaMes = iso(new Date(M.getFullYear(), M.getMonth() + +el.dataset.d, 1)).slice(0, 7); render(); },
+  'cf-dia': (el, e) => {
+    const d = el.dataset.v, ds = diasCreada().slice(), ult = UI.cfUlt;
+    if(e && e.shiftKey && ult){
+      const [a, b] = ult < d ? [ult, d] : [d, ult];
+      for(let x = a; x <= b; x = addDays(x, 1)) if(!ds.includes(x)) ds.push(x);
+      UI.creadaDias = ds;
+    } else UI.creadaDias = ds.includes(d) ? ds.filter(x => x !== d) : ds.concat(d);
+    UI.creadaDias.sort(); UI.cfUlt = d; guardarUI(); render();
+  },
   'p-todos': el => { UI.pAbiertos = el.dataset.v === '1' ? proyectos().map(p => p.id).concat('_sueltas') : []; guardarUI(); render(); },
   'ver-aceptar': () => abrirAceptar(),
   aceptar: el => { actualizar(el.dataset.k, el.dataset.id, {aceptado_por:ME, aceptado_en:nowISO()}); },
@@ -1661,6 +1727,7 @@ const ACC = {
 document.addEventListener('click', e => {
   const nov = $('#nov');
   if(!nov.hidden && !e.target.closest('#nov') && !e.target.closest('[data-act="novedades"]')) nov.hidden = true;
+  if(UI.creadaPop && !e.target.closest('.cf-wrap')){ UI.creadaPop = false; render(); }
   const q = e.target.closest('.dq [data-q]');
   if(q){ const box = q.closest('.dq'), inp = box.querySelector('input[type=date]'); inp.value = q.dataset.q === 'x' ? '' : addDays(hoy(), +q.dataset.q); syncDq(box); return; }
   const el = e.target.closest('[data-act]');

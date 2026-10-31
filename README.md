@@ -33,6 +33,8 @@ de Drive a través de Apps Script (`apps-script/Code.gs`).
 - **Aceptar lo nuevo (solo Jon)**: lo que crea Andrea y afecta a Jon (proyectos, y tareas en las que ejecuta o valida)
   le aparece en un aviso y una ventana para aceptarlo, como acuse de recibo. Andrea ve «⏳ Sin aceptar por Jon» hasta
   entonces y la campana le avisa cuando se acepta. Lo que crea Jon no requiere aceptación.
+- **Fecha de creación** en cada tarea y filtro **Creadas** (en Proyectos y Tareas): un calendario donde se marcan uno o
+  varios días (Mayús+clic para un rango), con atajos Hoy, Ayer, Antes de ayer y Últimos 7 días.
 - **Comentarios** en cada tarea y proyecto, y un aviso de **novedades** (la campana) con lo que ha hecho la otra persona desde tu última visita.
 - Funciona también sin conexión: guarda en el navegador y sube los cambios cuando vuelve la conexión.
 

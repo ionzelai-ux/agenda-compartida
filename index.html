@@ -429,6 +429,8 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media (max-width:1100px){.hoy-g{grid-template-columns:1fr}.kb{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1220px){.tbtn .lbl{display:none}.tbtn{padding:7px 9px}.tab{padding:8px 9px}.top{gap:10px}}
+@media (max-width:1100px) and (min-width:761px){.sync span{display:none}.sync{padding:6px 8px}}
 @media (max-width:900px){
   .cal-wrap{grid-template-columns:minmax(0,1fr)}
   .us{position:static;max-height:none;order:2}
@@ -469,6 +471,7 @@ label.fl{font-size:12.5px;font-weight:600;color:var(--tx2)}
   <div class="tools">
     <button class="tbtn sol" data-act="new-t" title="Nueva tarea (tecla N)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Tarea</span></button>
     <button class="tbtn" data-act="new-p" title="Nuevo proyecto"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Proyecto</span></button>
+    <button class="tbtn" data-act="exportar" title="Exportar tareas a Excel o copiarlas para un correo"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="lbl">Exportar</span></button>
     <button class="sync" id="sync" data-act="sync" title="Sincronizar ahora"><i></i><span>Solo este equipo</span></button>
     <button class="ibtn" data-act="novedades" title="Novedades"><svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="badge" id="nov-n" hidden></span></button>
     <button class="me" id="me" data-act="ajustes" title="Ajustes"></button>
@@ -1044,14 +1047,19 @@ function pcardSueltas(ts, forzarAbierto){
 /* =========================================================
    VISTA: TAREAS
    ========================================================= */
-function vTareas(){
+// Filtros de la pantalla Tareas (salvo la persona, que se aplica aparte)
+function tareasVista(){
   const q = (UI.q || '').toLowerCase().trim();
-  let ts = filtrarResp(tareas());
+  let ts = tareas();
   if(UI.turg !== 'todas') ts = ts.filter(t => (t.urgencia || 'media') === UI.turg);
   ts = ts.filter(coincideCreada);
   if(UI.tproj === '_') ts = ts.filter(t => !proyVivo(t.proyecto_id));
   else if(UI.tproj) ts = ts.filter(t => t.proyecto_id === UI.tproj);
   if(q) ts = ts.filter(t => (t.titulo || '').toLowerCase().includes(q) || (t.descripcion || '').toLowerCase().includes(q));
+  return ts;
+}
+function vTareas(){
+  const ts = filtrarResp(tareasVista());
   const projOpts = proyectos().sort((a, b) => (a.titulo || '').localeCompare(b.titulo || ''))
     .map(p => `<option value="${p.id}" ${UI.tproj === p.id ? 'selected' : ''}>${esc(p.titulo)}</option>`).join('');
   const LIM = 25;
@@ -1482,6 +1490,128 @@ function formAjustes(){
 }
 
 /* =========================================================
+   EXPORTAR (Excel o tabla para pegar en un correo)
+   ========================================================= */
+const EXP_QUE = {pend:'Pendientes (sin terminar)', vista:'Lo que veo en Tareas (con sus filtros)', todas:'Todas, también las terminadas'};
+const ORD_FASE = {ejecucion:0, validacion:1, terminada:2};
+const nomProy = t => proyVivo(t.proyecto_id) ? DB.proyectos[t.proyecto_id].titulo : '';
+function tareasExport(){
+  const que = UI.expQue || 'pend', per = UI.expPer || 'todos';
+  let ts = que === 'vista' ? tareasVista() : tareas();
+  if(que === 'pend') ts = ts.filter(t => !hecha(t));
+  if(per !== 'todos') ts = ts.filter(t => tocaA(t, per));
+  return ts.sort((a, b) => ORD_FASE[fase(a)] - ORD_FASE[fase(b)]
+    || (nomProy(a) || '￿').localeCompare(nomProy(b) || '￿') || sortT(a, b));
+}
+const fDMY = s => { if(!s) return ''; const d = s.length > 10 ? new Date(s) : parseISO(s); return isNaN(d) ? '' : pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); };
+const validaTxt = t => t.validador ? nombre(t.validador) : RESP[t.responsable] || '';
+function ultCom(t){ const c = (t.comentarios || []).slice(-1)[0]; return c ? `${nombre(c.por)} (${fDMY(c.ts)}): ${c.txt}` : ''; }
+function filaExport(t){
+  return {estado:FASES[fase(t)], proyecto:nomProy(t) || '(Tarea suelta)', tarea:t.titulo || '', urgencia:URG[t.urgencia || 'media'],
+    ejecuta:RESP[t.responsable] || '', valida:validaTxt(t), inicio:t.fecha_inicio, entrega:t.fecha_entrega,
+    plazo:plazo(t).t.replace('✓ ', ''), revision:t.fecha_revision, ejecutada:(t.ejecutada_en || '').slice(0, 10),
+    validada:(t.validada_en || '').slice(0, 10), creada:t.creado_en ? diaCreacion(t) : '', creador:nombre(t.creado_por),
+    descripcion:t.descripcion || '', comentario:ultCom(t), vencida:plazo(t).c === 'venc'};
+}
+function formExportar(){
+  UI.expPer = UI.expPer || UI.resp || 'todos';
+  const n = tareasExport().length;
+  abrirModal(`<div class="mh"><h2>Exportar tareas</h2><button class="x" data-act="close" title="Cerrar">×</button></div>
+  <div class="mb">
+    <div class="fl"><span>Qué tareas</span>${segUI('expQue', EXP_QUE, UI.expQue || 'pend')}</div>
+    <div class="fl"><span>De quién</span>${segUI('expPer', {todos:'Los dos', jon:'Jon', andrea:'Andrea'}, UI.expPer)}
+      <span class="hint" style="font-weight:400">Lo que le toca a esa persona: ejecutar o validar.</span></div>
+    <p class="hint" style="margin:0"><b>${n}</b> tarea${n === 1 ? '' : 's'} · ordenadas por estado, proyecto y fecha de entrega.</p>
+  </div>
+  <div class="mf"><button class="btn" data-act="exp-copiar" ${n ? '' : 'disabled'}>Copiar para correo</button><button class="btn pri" data-act="exp-excel" ${n ? '' : 'disabled'}>Descargar Excel</button></div>`);
+}
+// Tabla HTML con estilos en línea: al pegarla en Outlook o Gmail se queda como tabla
+function exportarCorreo(){
+  const filas = tareasExport().map(filaExport), grupos = {};
+  filas.forEach(f => (grupos[f.estado] = grupos[f.estado] || []).push(f));
+  const th = 'style="background:#1E40AF;color:#fff;text-align:left;padding:6px 8px;font:bold 13px Calibri,Arial"';
+  const tdS = (x = '') => `style="border-bottom:1px solid #E2E8F0;padding:5px 8px;font:13px Calibri,Arial;vertical-align:top;${x}"`, td = tdS();
+  const cab = ['Proyecto', 'Tarea', 'Urgencia', 'Ejecuta', 'Valida', 'Entrega', 'Plazo'];
+  let html = `<p style="font:13px Calibri,Arial">Tareas a ${fDMY(hoy())}:</p>`, txt = `Tareas a ${fDMY(hoy())}\n`;
+  Object.entries(grupos).forEach(([g, l]) => {
+    html += `<p style="font:bold 14px Calibri,Arial;color:#1E40AF;margin:14px 0 4px">${esc(g)} (${l.length})</p>
+      <table style="border-collapse:collapse;min-width:640px"><tr>${cab.map(c => `<th ${th}>${c}</th>`).join('')}</tr>
+      ${l.map(f => `<tr><td ${td}>${esc(f.proyecto)}</td><td ${td}><b>${esc(f.tarea)}</b></td>
+        <td ${f.urgencia === 'Urgente' ? tdS('color:#B91C1C;font-weight:bold') : td}>${f.urgencia}</td><td ${td}>${esc(f.ejecuta)}</td><td ${td}>${esc(f.valida)}</td>
+        <td ${td}>${fDMY(f.entrega)}</td><td ${td}>${f.vencida ? `<span style="color:#B91C1C;font-weight:bold">${f.plazo}</span>` : esc(f.plazo)}</td></tr>`).join('')}</table>`;
+    txt += `\n${g.toUpperCase()} (${l.length})\n` + l.map(f => `- ${f.proyecto} · ${f.tarea} · ${f.urgencia} · Ejecuta ${f.ejecuta}${f.entrega ? ' · Entrega ' + fDMY(f.entrega) : ''} · ${f.plazo}`).join('\n') + '\n';
+  });
+  const ok = () => { cerrarModal(); toast('Copiado: pégalo en el correo (Ctrl+V)'); };
+  const planB = () => copiarSeleccion(html) ? ok() : verParaCopiar(html);
+  if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+    navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html], {type:'text/html'}), 'text/plain':new Blob([txt], {type:'text/plain'})})]).then(ok, planB);
+  } else planB();
+}
+// Plan B: seleccionar la tabla ya pintada y copiarla (conserva el formato)
+function copiarSeleccion(html){
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff';
+  d.innerHTML = html; document.body.appendChild(d);
+  const sel = getSelection(), rg = document.createRange();
+  rg.selectNodeContents(d); sel.removeAllRanges(); sel.addRange(rg);
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  sel.removeAllRanges(); d.remove();
+  return ok;
+}
+function verParaCopiar(html){
+  abrirModal(`<div class="mh"><h2>Copiar para correo</h2><button class="x" data-act="close" title="Cerrar">×</button></div>
+    <div class="mb"><p class="hint" style="margin:0">El navegador no deja copiar solo. Está todo seleccionado: pulsa <b>Ctrl+C</b> y pégalo en el correo.</p>
+    <div id="exp-prev" style="max-height:55vh;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:8px">${html}</div></div>`);
+  const sel = getSelection(), rg = document.createRange();
+  rg.selectNodeContents($('#exp-prev')); sel.removeAllRanges(); sel.addRange(rg);
+}
+// Excel con xlsx-js-style (se carga solo al exportar)
+function cargarXLSX(){
+  if(window.XLSX) return Promise.resolve();
+  return new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+    s.onload = ok; s.onerror = ko; document.head.appendChild(s);
+  });
+}
+function exportarExcel(){
+  toast('Preparando Excel…');
+  cargarXLSX().then(() => {
+    const filas = tareasExport().map(filaExport);
+    const COLS_X = [['estado', 'Estado', 22], ['proyecto', 'Proyecto', 30], ['tarea', 'Tarea', 46], ['urgencia', 'Urgencia', 10],
+      ['ejecuta', 'Ejecuta', 10], ['valida', 'Valida', 10], ['inicio', 'Inicio', 11], ['entrega', 'Entrega', 11], ['plazo', 'Plazo', 14],
+      ['revision', 'Revisión', 11], ['ejecutada', 'Ejecutada el', 12], ['validada', 'Validada el', 12], ['creada', 'Creada el', 11],
+      ['creador', 'Creada por', 11], ['descripcion', 'Descripción', 50], ['comentario', 'Último comentario', 50]];
+    const FECHAS = {inicio:1, entrega:1, revision:1, ejecutada:1, validada:1, creada:1};
+    const serial = s => (Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) - Date.UTC(1899, 11, 30)) / 864e5;
+    const borde = {bottom:{style:'thin', color:{rgb:'E2E8F0'}}};
+    const ws = {}, nC = COLS_X.length, R0 = 3;
+    const put = (r, c, cell) => { ws[XLSX.utils.encode_cell({r, c})] = cell; };
+    const banda = (r, txt, sz, fill) => { for(let c = 0; c < nC; c++) put(r, c, {v:c ? '' : txt, t:'s', s:{fill:{fgColor:{rgb:fill}}, font:{bold:true, sz, color:{rgb:'FFFFFF'}}}}); };
+    banda(0, 'Qualipharma · Agenda Andrea y Jon', 14, '1E40AF');
+    const per = UI.expPer || 'todos';
+    banda(1, `${EXP_QUE[UI.expQue || 'pend']}${per !== 'todos' ? ' · ' + nombre(per) : ''} · ${filas.length} tareas · exportado el ${fTs(nowISO())}`, 10, '2563EB');
+    COLS_X.forEach(([, t], c) => put(R0, c, {v:t, t:'s', s:{fill:{fgColor:{rgb:'DBEAFE'}}, font:{bold:true, color:{rgb:'1E3A8A'}}, border:{bottom:{style:'medium', color:{rgb:'2563EB'}}}}}));
+    filas.forEach((f, i) => COLS_X.forEach(([k], c) => {
+      const v = f[k], s = {border:borde, alignment:{vertical:'top', wrapText:k === 'descripcion' || k === 'comentario' || k === 'tarea'}};
+      if(k === 'tarea') s.font = {bold:true};
+      if((k === 'urgencia' && v === 'Urgente') || (k === 'plazo' && f.vencida)) s.font = {bold:true, color:{rgb:'B91C1C'}};
+      put(R0 + 1 + i, c, FECHAS[k] && v ? {v:serial(v), t:'n', z:'dd/mm/yyyy', s} : {v:v || '', t:'s', s});
+    }));
+    const fin = XLSX.utils.encode_cell({r:R0 + filas.length, c:nC - 1});
+    ws['!ref'] = 'A1:' + fin;
+    ws['!autofilter'] = {ref:XLSX.utils.encode_cell({r:R0, c:0}) + ':' + fin};
+    ws['!cols'] = COLS_X.map(x => ({wch:x[2]}));
+    ws['!rows'] = [{hpt:24}, {hpt:18}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Tareas');
+    XLSX.writeFile(wb, `Tareas ${hoy()}.xlsx`);
+    cerrarModal(); toast('Excel descargado');
+  }, () => toast('No se pudo cargar el generador de Excel. ¿Hay conexión?'));
+}
+
+/* =========================================================
    NOVEDADES (panel)
    ========================================================= */
 function abrirNov(){
@@ -1609,7 +1739,10 @@ function syncDq(box){
 function irA(vista){ UI.vista = vista; guardarUI(); $('#nov').hidden = true; render(); window.scrollTo(0, 0); }
 const ACC = {
   vista: el => irA(el.dataset.v),
-  ui: el => { UI[el.dataset.k] = el.dataset.v; guardarUI(); render(); },
+  ui: el => { UI[el.dataset.k] = el.dataset.v; guardarUI(); if(el.closest('#modal')) formExportar(); else render(); },
+  exportar: () => formExportar(),
+  'exp-copiar': () => exportarCorreo(),
+  'exp-excel': () => exportarExcel(),
   'new-t': () => formTarea(null, UI.vista === 'calendario' && UI.cal === 'dia' ? {fecha_inicio:UI.calFecha || hoy()} : {}),
   'new-p': () => formProyecto(null),
   'edit-t': el => formTarea(el.dataset.id),
